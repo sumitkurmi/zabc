@@ -24,6 +24,12 @@ export async function fetchApi<T>(
     headers,
   });
 
+  if (response.status === 401 && endpoint.startsWith('/admin') && endpoint !== '/admin/login') {
+    sessionStorage.removeItem('admin_token');
+    window.location.href = '/admin/login';
+    throw new Error('Unauthorized access. Redirecting to login.');
+  }
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const message = errorData.detail || errorData.message || 'An error occurred';

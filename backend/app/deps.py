@@ -1,33 +1,25 @@
 """Authentication dependency and JWT token verification module.
 
-Provides FastAPI dependency functions to protect admin endpoints using Bearer JWT tokens.
+Provides FastAPI dependency functions to protect admin endpoints using Bearer JWT tokens
+or HTTP cookies.
 
 Token lifecycle:
 - Token generated upon POST /api/admin/login with expiration (default 8h)
-- Token passed via HTTP Header: `Authorization: Bearer <token>`
+- Passed via HTTP Header `Authorization: Bearer <token>` or `admin_token` cookie
 - Decoded using PyJWT with constant JWT_SECRET configured in settings
 """
 
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from backend.app.config import settings
 
-# HTTP Bearer authentication scheme wrapper
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    """Generates a signed JWT token containing admin claims and expiration time.
-
-    Args:
-        data: Dict containing claims (e.g. {'sub': 'admin'}).
-        expires_delta: Optional custom token duration.
-
-    Returns:
-        Encoded JWT string.
-    """
+    """Generates a signed JWT token containing admin claims and expiration time."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -39,19 +31,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
-def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """FastAPI dependency to validate JWT bearer token on protected admin endpoints.
-
-    Args:
-        credentials: Bearer token supplied in Authorization header.
-
-    Returns:
-        Subject username string extracted from decoded token.
-
-    Raises:
-        HTTPException 401 if token is missing, invalid, or expired.
-    """
-    token = credentials.credentials
+def verify_token(token: str) -> str:
+    """Decodes and validates JWT token string, returning sub claim if valid."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         username: str = payload.get("sub")
@@ -74,3 +55,24 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security))
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def require_admin(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> str:
+    """FastAPI dependency to validate JWT bearer token or cookie on protected admin endpoints."""
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get("admin_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return verify_token(token)

@@ -18,7 +18,12 @@ export async function adminLogin(username: string, password: string): Promise<Ad
   return res;
 }
 
-export function adminLogout(): void {
+export async function adminLogout(): Promise<void> {
+  try {
+    await fetchApi('/admin/logout', { method: 'POST' });
+  } catch (e) {
+    // Ignore error
+  }
   sessionStorage.removeItem('admin_token');
 }
 

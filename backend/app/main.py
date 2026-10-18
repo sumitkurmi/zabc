@@ -2,7 +2,7 @@
 
 Specification Section 3, 4, 10.
 Wires CORS, rate limiting using SlowAPI, database startup lifecycle, public and admin API routers,
-and static file serving for React frontend SPA build.
+and static file serving for React frontend SPA build with server-side admin page auth protection.
 """
 
 import os
@@ -10,13 +10,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from backend.app.config import settings
 from backend.app.db import close_db_client, get_database
+from backend.app.deps import verify_token
 from backend.app.models import ProblemType
 from backend.app.schemas import ConfigResponse, LocationOption, ProblemTypeOption
 from backend.app.routers import (
@@ -34,11 +35,9 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/hour"])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context manager handling startup and shutdown events."""
-    # Ensure data directory paths exist
     os.makedirs(settings.CHROMA_DIR, exist_ok=True)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     yield
-    # Shutdown DB connection
     close_db_client()
 
 
@@ -49,7 +48,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Set rate limiter state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -63,7 +61,6 @@ app.add_middleware(
 )
 
 
-# Configurable campus locations
 DEFAULT_LOCATIONS = [
     LocationOption(id="hostel_a", name="Hostel Block A"),
     LocationOption(id="hostel_b", name="Hostel Block B"),
@@ -75,7 +72,6 @@ DEFAULT_LOCATIONS = [
     LocationOption(id="other", name="Other Campus Area")
 ]
 
-# Display labels for ProblemType enum (Section 5.3)
 PROBLEM_TYPE_OPTIONS = [
     ProblemTypeOption(value=ProblemType.LAN_PROBLEM, label="LAN PROBLEM"),
     ProblemTypeOption(value=ProblemType.IP_ADDRESS_ISSUE, label="I.P ADDRESS ISSUE"),
@@ -105,14 +101,32 @@ app.include_router(admin_chats.router, prefix="/api")
 app.include_router(admin_reference.router, prefix="/api")
 
 
-# Serve frontend static assets if built
+# Serve frontend static assets with server-side route guards
 frontend_dist = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
 if os.path.exists(frontend_dist):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_frontend_spa(full_path: str):
+    async def serve_frontend_spa(full_path: str, request: Request):
+        path_str = full_path.strip("/")
+
+        # Check if request is for admin page route (excluding admin/login)
+        if path_str == "admin" or (path_str.startswith("admin/") and path_str != "admin/login"):
+            token = request.cookies.get("admin_token")
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header.split(" ")[1]
+
+            if not token:
+                return RedirectResponse(url="/admin/login", status_code=302)
+
+            try:
+                verify_token(token)
+            except Exception:
+                return RedirectResponse(url="/admin/login", status_code=302)
+
         file_path = os.path.join(frontend_dist, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
+
         return FileResponse(os.path.join(frontend_dist, "index.html"))
