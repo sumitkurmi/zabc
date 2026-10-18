@@ -6,6 +6,7 @@ import { ComplaintForm } from '../components/form/ComplaintForm';
 import { ChatLauncher } from '../components/chat/ChatLauncher';
 import { ChatPanel } from '../components/chat/ChatPanel';
 import { Shield, LifeBuoy } from 'lucide-react';
+import logo from '../assets/logo.jpeg'
 
 export const Home: React.FC = () => {
   const [config, setConfig] = useState<ConfigResponse | null>(null);
@@ -48,7 +49,7 @@ export const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* College Header */}
-      <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
+      {/* <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
@@ -72,8 +73,35 @@ export const Home: React.FC = () => {
             </a>
           </div>
         </div>
-      </header>
+      </header> */}
 
+      <header className="bg-[#f8f9fa] text-slate-900 border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img
+              src={logo}
+              alt="MNNIT"
+              className="w-10 h-10 rounded-xl object-contain"
+            />
+            <div>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+                {config?.college_name || 'MNNIT Allahabad'}
+              </h1>
+              <p className="text-[11px] text-slate-500">Network Complaint & AI Diagnosis Portal</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a
+              href="/admin/login"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+            >
+              <Shield className="w-3.5 h-3.5 text-blue-600" />
+              <span>Admin Login</span>
+            </a>
+          </div>
+        </div>
+      </header> 
       {/* Main Student Form */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full">
         {config ? (
