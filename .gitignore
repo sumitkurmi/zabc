@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build artifacts
+dist/
+build/
+frontend/dist/
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Application storage & data
+data/
+data/chroma/
+data/uploads/
+*.log
+
+# Environment variables
+.env
