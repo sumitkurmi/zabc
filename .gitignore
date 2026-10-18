@@ -20,5 +20,7 @@ data/chroma/
 data/uploads/
 *.log
 
+
 # Environment variables
 .env
+
