@@ -12,7 +12,7 @@ An AI-assisted web portal where students report network problems and troubleshoo
 | **Backend** | Python 3.11+, FastAPI, Uvicorn, SlowAPI (Rate Limiting), Pydantic v2 |
 | **Database** | MongoDB (Motor async driver) |
 | **Vector Store** | ChromaDB (Local persistent directory) |
-| **LLM & Embeddings** | Anthropic Claude API (with Mock fallback mode), local `sentence-transformers` |
+| **LLM & Embeddings** | A multillm orchestrator with GEMINI ,OPENAI ,GROK ,mock fallback and local `sentence-transformers` |
 | **Doc Parsers** | `pypdf`, `python-docx`, plain text reader |
 | **Auth** | Bearer JWT (PyJWT), bcrypt password hashing |
 
@@ -52,9 +52,19 @@ cd ..
 
 # Start FastAPI server
 PYTHONPATH=. uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+
+# From next time to run frontend and server both 
+npm start
 ```
 
 Access the portal at `http://localhost:8000`.
+If using college ethernet then at `https://{ your ip address }:8000`
+
+Get you ip adress by running 
+```bash
+# On terminal
+ipconfig
+```
 
 ---
 
