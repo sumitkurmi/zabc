@@ -58,7 +58,7 @@ npm start
 ```
 
 Access the portal at `http://localhost:8000`.
-If using college ethernet then at `https://{ your ip address }:8000`
+If using college ethernet then at `http://{ your ip address }:8000`
 
 Get you ip adress by running 
 ```bash
