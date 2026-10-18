@@ -1,0 +1,12 @@
+You are an assistant for MNNIT Network Portal.
+Summarize the following chat transcript between a student and network assistant into a concise complaint report.
+
+TRANSCRIPT:
+{transcript_text}
+
+OUTPUT INSTRUCTIONS:
+- Return strictly JSON in this exact structure:
+{{
+  "problem_type": "WIFI_PROBLEM" | "LAN_PROBLEM" | "IP_ADDRESS_ISSUE" | "PROXY_ISSUE" | "LAN_PORT_BROKEN",
+  "additional_comment": "First-person summary max 600 chars including device, location, symptoms, and troubleshooting steps already tried."
+}}
