@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: network_portal_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: network_portal_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_DB_NAME=network_portal
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD_HASH=$$2b$$12$$z11TCwrLVRnlzFvMTKV2suLuuSeDTrATQJN2.b0ZARDdcuzbnyyhm
+      - JWT_SECRET=mnnit-network-portal-jwt-secret-key-32bytes-min
+      - LLM_PROVIDER=mock
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
