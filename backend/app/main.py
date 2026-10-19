@@ -62,14 +62,22 @@ app.add_middleware(
 
 
 DEFAULT_LOCATIONS = [
-    LocationOption(id="hostel_a", name="Hostel Block A"),
-    LocationOption(id="hostel_b", name="Hostel Block B"),
-    LocationOption(id="hostel_c", name="Hostel Block C"),
-    LocationOption(id="academic", name="Academic Block"),
-    LocationOption(id="library", name="Central Library"),
-    LocationOption(id="labs", name="Computer Labs"),
-    LocationOption(id="cafeteria", name="Cafeteria"),
-    LocationOption(id="other", name="Other Campus Area")
+    LocationOption(id="sv_patel", name="SV Patel Hostel"),
+    LocationOption(id="bg_tilak", name="BG Tilak Hostel"),
+    LocationOption(id="mm_malviya", name="MM Malviya Hostel"),
+    LocationOption(id="pd_tandon", name="PD Tandon Hostel"),
+    LocationOption(id="cv_raman", name="CV Raman Hostel"),
+    LocationOption(id="rn_tagore", name="RN Tagore Hostel"),
+    LocationOption(id="svbh", name="SVBH Hostel"),
+    LocationOption(id="pg_hostel", name="PG Hostel"),
+    LocationOption(id="sn_girls", name="SN Girls Hostel"),
+    LocationOption(id="ih_b_hostel", name="IH-B Hostel"),
+    LocationOption(id="kn_girls", name="KN Girls Hostel"),
+    LocationOption(id="dj_girls", name="DJ Girls Hostel"),
+    LocationOption(id="residential_colony", name="Residential Colony"),
+    LocationOption(id="guest_house", name="Guest House"),
+    LocationOption(id="academic_campus", name="Academic Campus"),
+    LocationOption(id="others", name="Others")
 ]
 
 PROBLEM_TYPE_OPTIONS = [

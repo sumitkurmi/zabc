@@ -93,7 +93,7 @@ async def seed_demo_chats():
     ]
 
     result = await db.chats.insert_many(demo_chats)
-    print(f"Successfully seeded {len(result.inserted_ids)} demo chats into 'chats' collection.")
+    print(f"Successfully seeded {len(result.inserted_ids)} demo chats into 'chats' collection.") # type: ignore
     close_db_client()
 
 
