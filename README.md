@@ -57,8 +57,17 @@ cp .env.example .env
 pip install -r backend/requirements.txt
 
 # Create MongoDB indexes and seed reference categories
-PYTHONPATH=. python3 scripts_db/create_indexes.py
-PYTHONPATH=. python3 scripts_db/seed_categories.py
+
+# For unix/linux 
+PYTHONPATH=. py scripts_db/create_indexes.py
+PYTHONPATH=. py scripts_db/seed_categories.py
+PYTHONPATH=. py scripts_db/seed_demo_chats.py
+
+# For windows 
+$env:PYTHONPATH="."
+py scripts_db/create_indexes.py
+py scripts_db/seed_categories.py
+py scripts_db/seed_demo_chats.py
 ```
 
 ### 4. Build Frontend & Run Backend Application
