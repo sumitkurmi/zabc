@@ -14,14 +14,19 @@ PHONE_REGEX = re.compile(r"(\+91[\-\s]?)?[6-9]\d{9}")
 PASSWORD_PATTERNS = re.compile(r"(?i)(password|pass|pwd|key)\s*[:=]\s*\S+")
 
 
+# Regular expressions for stripping Markdown symbols before chunking
+MARKDOWN_BLOCK_REGEX = re.compile(r"```[a-zA-Z]*\n?([\s\S]*?)```")
+MARKDOWN_SYMBOL_REGEX = re.compile(r"[\*\_~`#]+|^\s*[\-\*]\s+|^\s*\d+\.\s+", re.MULTILINE)
+
+
 def sanitize_text(text: str) -> str:
-    """Strips sensitive student PII from chat transcripts before vector store indexing.
+    """Strips sensitive student PII and raw Markdown formatting symbols before vector store indexing.
 
     Args:
         text: Raw chat transcript or user text.
 
     Returns:
-        Sanitized text with email addresses and phone numbers replaced with placeholders.
+        Sanitized text with email/phone/password redacted and plain text stripped of Markdown markup.
     """
     if not text:
         return ""
@@ -34,5 +39,14 @@ def sanitize_text(text: str) -> str:
 
     # Replace plain text passwords
     sanitized = PASSWORD_PATTERNS.sub(r"\1: [REDACTED_PASSWORD]", sanitized)
+
+    # Strip code block fences but keep code content
+    sanitized = MARKDOWN_BLOCK_REGEX.sub(r"\1", sanitized)
+
+    # Strip markdown symbols (*, _, ~, `, #, bullet dashes, list numbers) for clean plain-text vector embedding
+    sanitized = MARKDOWN_SYMBOL_REGEX.sub(" ", sanitized)
+
+    # Clean up duplicate underscores in REDACTED placeholders if any symbols matched
+    sanitized = sanitized.replace("[REDACTED EMAIL]", "[REDACTED_EMAIL]").replace("[REDACTED PHONE]", "[REDACTED_PHONE]").replace("[REDACTED PASSWORD]", "[REDACTED_PASSWORD]")
 
     return sanitized

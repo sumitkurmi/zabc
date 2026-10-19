@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatTurn, ProblemType } from '../../types';
 import { Bot, User, AlertCircle } from 'lucide-react';
+import { MarkdownMessage } from './MarkdownMessage';
 
 interface MessageListProps {
   messages: ChatTurn[];
@@ -37,13 +38,17 @@ export const MessageList: React.FC<MessageListProps> = ({
             </div>
 
             <div
-              className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm ${
+              className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm overflow-hidden ${
                 isUser
                   ? 'bg-blue-600 text-white rounded-tr-none'
                   : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
               }`}
             >
-              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              {isUser ? (
+                <div className="whitespace-pre-wrap leading-relaxed text-xs">{msg.content}</div>
+              ) : (
+                <MarkdownMessage content={msg.content} />
+              )}
 
               {/* Detected category chip on assistant reply */}
               {!isUser && detectedCategory && index === messages.length - 1 && (
