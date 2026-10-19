@@ -6,12 +6,6 @@ An AI-assisted web portal where students report network problems and troubleshoo
 
 ## 📊 Repository Metrics & Stats
 
-<!-- Repository Summary Card -->
-<p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/pin/?username=sureshkumarhere&repo=Semester_7_Project&theme=radial" alt="Repo Stats" />
-</p>
-
-<!-- Activity & Issue Badges -->
 <p align="center">
   <img src="https://img.shields.io/github/languages/top/sureshkumarhere/Semester_7_Project?style=for-the-badge&color=blue" alt="Top Language" />
   <img src="https://img.shields.io/github/languages/count/sureshkumarhere/Semester_7_Project?style=for-the-badge&color=green" alt="Total Languages" />
@@ -19,20 +13,11 @@ An AI-assisted web portal where students report network problems and troubleshoo
   <img src="https://img.shields.io/github/issues-closed/sureshkumarhere/Semester_7_Project?style=for-the-badge&color=purple" alt="Issues Fixed" />
 </p>
 
-<!-- Lines of Code & Contributor Badges -->
 <p align="center">
-  <img src="https://img.shields.io/tokei/lines/github/sureshkumarhere/Semester_7_Project?style=flat-square&color=blue" alt="Lines of Code" />
+  <img src="https://img.shields.io/github/languages/code-size/sureshkumarhere/Semester_7_Project?style=flat-square&label=code%20size" alt="Code Size" />
   <img src="https://img.shields.io/github/contributors/sureshkumarhere/Semester_7_Project?style=flat-square" alt="Contributors" />
   <img src="https://img.shields.io/github/repo-size/sureshkumarhere/Semester_7_Project?style=flat-square" alt="Repo Size" />
   <img src="https://img.shields.io/github/last-commit/sureshkumarhere/Semester_7_Project?style=flat-square" alt="Last Commit" />
-</p>
-
----
-
-### 💻 Languages Breakdown
-
-<p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=sureshkumarhere&repo=Semester_7_Project&layout=donut&theme=radial" alt="Repo Languages" />
 </p>
 
 
