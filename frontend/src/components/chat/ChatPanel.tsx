@@ -52,6 +52,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const userMessagesCount = messages.filter((m) => m.role === 'user').length;
 
+  // Prompts confirmation if active chat has user messages before creating a fresh chat
+  const handleStartNewChat = () => {
+    if (userMessagesCount > 0) {
+      const confirmed = window.confirm('Start a new chat? This conversation will be closed.');
+      if (!confirmed) return;
+    }
+    startNewChat();
+  };
+
   const handleLogRequestWithAI = async () => {
     try {
       setIsSummarizing(true);
@@ -90,7 +99,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          {/* Always-visible New Chat Button in header */}
+          <button
+            onClick={handleStartNewChat}
+            className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium text-white flex items-center gap-1 transition-colors"
+            title="Start a new chat"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">New Chat</span>
+          </button>
+
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-colors"
@@ -149,11 +168,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             </span>
           </div>
           <button
-            onClick={startNewChat}
-            className="self-start text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-3 py-1 rounded-lg flex items-center gap-1 transition-colors"
+            onClick={handleStartNewChat}
+            className="self-start text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Start New Chat
+            <RotateCcw className="w-4 h-4" />
+            <span>Start New Chat</span>
           </button>
         </div>
       )}
