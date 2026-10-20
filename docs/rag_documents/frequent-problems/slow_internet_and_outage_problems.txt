@@ -1,0 +1,30 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: Slow internet and internet down in a whole room or hostel
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: The internet is very slow
+
+Steps for the student:
+- Stop big downloads running in the background.
+- Run only one speed test at a time.
+- Check the condition of the Wi-Fi signal and the LAN connection.
+- Check the internet speed on another device at the same time.
+- Send the time of the problem, your Hostel/Room Number and a screenshot of the speed test.
+If the internet is slow in many rooms, please give us that information.
+
+Technician: Check AP utilization, switch uplink, bandwidth usage, packet loss and Proxy load.
+
+
+PROBLEM: The internet is down in the whole room or the whole Hostel
+
+Please check first:
+- Are both Wi-Fi and LAN down in your room?
+- Is the internet also down in the other rooms nearby?
+- If possible, check from another device.
+- Send the Hostel Name, Room Number, the time the problem started and the status of Wi-Fi/LAN.
+
+If the internet is down in many rooms at the same time, instead of changing various settings, report it to the Technician.
+
+Technician: Check the AP/uplink, distribution switch, OFC link, DHCP, core routing and the related Proxy/Internet gateway.

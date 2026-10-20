@@ -1,0 +1,60 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: Proxy and Squid problems (wrong proxy settings, proxy errors, laptop works differently from mobile)
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: Websites do not open because the Proxy Server or the Squid Port is wrong
+
+Steps for the student:
+- Open Settings in Windows.
+- Go to Network & Internet -> Proxy.
+- Check that the Proxy setting prescribed by your institute is correct.
+- If a Manual Proxy is required, enter only the correct Server IP and Port given by the Technician.
+- If Automatic configuration/PAC is used, do not turn it off without confirmation.
+- Open the website again in Chrome.
+If the problem continues, send a screenshot of the Proxy settings.
+
+Technician's check: Check the Squid service, Proxy IP, the configured listening port, ACL, authentication and the permission for the client subnet.
+
+Do not enter any guessed value for the Proxy IP and Port. Only the institute's current configuration is valid.
+
+
+PROBLEM: Proxy Error - ERR_PROXY_CONNECTION_FAILED or 502/503 Error
+
+Steps for the student:
+- First check that Wi-Fi/LAN is connected.
+- Close the browser and open it again.
+- Confirm the correct setting in Settings -> Network & Internet -> Proxy.
+- If the internet works in another browser, the problem may be in the browser or its Proxy setting.
+- If the internet does not work in any browser, send a screenshot of the error and the time.
+Please do not change the IP or Port of the Proxy Server yourself.
+
+Technician's check: Check whether the proxy server is reachable, Squid logs, ACL denial, connection limits and upstream DNS/connectivity.
+
+
+PROBLEM: The mobile works, but the internet does not work on the laptop because of the Proxy
+
+If the internet works on the mobile and not on the laptop:
+- On the laptop, open Settings -> Network & Internet -> Proxy.
+- Confirm the Proxy setting prescribed by the institute.
+- Run ipconfig in CMD.
+- Also open the website in another browser.
+- Send the Proxy settings and a screenshot of the error to the Technician.
+
+Note: The network configuration of the mobile and the laptop can be different. Do not try to switch off or bypass the Proxy.
+
+Technician's check: Check the laptop's Proxy configuration and the campus policy applicable on that subnet.
+
+
+PROBLEM: The internet was working earlier, but now a Proxy Error appears
+(Examples: ERR_PROXY_CONNECTION_FAILED, 502 Bad Gateway or 503 Service Unavailable)
+
+Please check the following:
+- Run ping 172.31.100.1 in CMD.
+- If a Reply is received, press Windows + R and open inetcpl.cpl.
+- In Connections -> LAN settings, check the prescribed Proxy IP and Port.
+- Send a screenshot of the Proxy setting.
+- If the setting is correct, send a screenshot of the error and the time the problem started.
+
+If many students are getting the Proxy Error at the same time, it may also be a problem with the Proxy Server or upstream connectivity.

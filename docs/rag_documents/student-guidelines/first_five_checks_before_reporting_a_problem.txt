@@ -1,0 +1,22 @@
+MNNIT Network Support Knowledge Base
+Category: Student troubleshooting guidelines
+Topic: The first five things to check when the internet is not working
+
+Step 1 - Wi-Fi or LAN connection
+Check whether Wi-Fi is turned on. If you are using LAN, check the Ethernet cable and the port.
+
+Step 2 - IP Address
+Check whether the computer has received the correct IP Address. If the network uses DHCP, the IP should normally be received automatically.
+
+Step 3 - Proxy and Squid Port
+If a Proxy is compulsory in the institute's network, the correct Proxy IP and Port must be entered.
+
+Step 4 - Browser
+Open the website in another browser. Check the Proxy, extensions and browser settings.
+
+Step 5 - Another website or device
+Open two or three websites and, if possible, also check from another device on the same connection. This will show whether the problem is in one device or in the whole room/network.
+
+Note: Verify the actual MNNIT Proxy IP, Squid Port, VLAN and IP Address information from the IT policy in force at that time or from the Technician. Students must not enter any IP or Port by guesswork.
+
+Please do not send your Password, OTP or any other confidential information.

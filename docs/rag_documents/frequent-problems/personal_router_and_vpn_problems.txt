@@ -1,0 +1,27 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: Internet not working after installing a personal Wi-Fi router or after turning on a VPN
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: The internet is not working after installing a personal Wi-Fi router
+
+Steps for the student:
+- First check whether the internet works directly on the laptop from the campus LAN socket.
+- If it works directly but not through the router, the router configuration has to be checked.
+- Send the router model and a photo of the WAN/LAN connections.
+- Check DHCP, AP/Bridge mode and IP conflict with the Technician's help.
+Do not start a new DHCP Server or a separate Wi-Fi router without permission. Installing an unauthorised router in the campus network can affect other users.
+
+Technician: If a personal router is permitted, check AP/Bridge mode, DHCP, NAT, uplink and IP addressing according to the campus policy.
+
+
+PROBLEM: The internet is not working after turning on a VPN
+
+Steps for the student:
+- If you turned on the VPN yourself, disconnect it and check the normal internet.
+- Check the browser and Proxy settings.
+- If the VPN is required by the institute, do not turn it off; contact the concerned Technician.
+- Send a screenshot of the VPN error and the time the problem started.
+
+Technician: Check the VPN routes, DNS, proxy interaction and the institute's security policy.

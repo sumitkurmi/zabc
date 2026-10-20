@@ -1,0 +1,17 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: Standard format for receiving a complaint from a student
+
+Instead of a long conversation every time, the Technician can send this short format.
+
+MNNIT Internet Complaint
+- Hostel Name:
+- Room Number:
+- Connection: Wi-Fi / LAN / Both
+- Device: Laptop / Mobile / Both
+- Problem: No Internet / Slow / Proxy Error / IP Issue / Other
+- Internet in other rooms: Working / Not Working / Unknown
+- Time the problem started:
+- Error Screenshot: Attached / Not Available
+
+Please do not send your Password, OTP or any other confidential information.

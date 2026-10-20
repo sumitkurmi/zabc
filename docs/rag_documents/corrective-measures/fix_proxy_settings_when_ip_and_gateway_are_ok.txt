@@ -1,0 +1,25 @@
+MNNIT Network Support Knowledge Base
+Category: Approved corrective measures
+Topic: Correcting the Proxy settings when the IP is correct and the gateway ping works, but the internet does not work
+
+Situation: The IP is correct and the Gateway ping is also working, but the internet is not working. This situation is quite useful for troubleshooting from the Hostel by phone/WhatsApp, especially when the internet is working in nearby rooms.
+
+Step 1 - Open the Proxy settings
+Send this to the student:
+The IP of your laptop is correct and the Gateway ping is also working. Now check the Proxy setting.
+- Press Windows + R.
+- Type inetcpl.cpl and press Enter.
+- Open the Connections tab.
+- Click LAN settings.
+- Check whether the Proxy Server is enabled or not, and whether the Server IP and Port are correct.
+Set it only according to the Proxy configuration applicable at MNNIT. Send a screenshot of the LAN settings.
+
+Step 2 - Get the correct Proxy IP and Port set
+The Technician should tell the student the correct Proxy IP and Port according to his current approved configuration.
+
+For example, if the IP of your prescribed Proxy Server is 172.31.100.29, enter that same one, but only if that is the Proxy currently prescribed for that student's network. Take the Port also only from the actual configuration.
+
+Step 3 - Check the internet
+Click OK in LAN settings and close all windows. Open the browser again and try a website.
+- If the internet now starts working: the problem was in the Proxy configuration.
+- If it still does not work: in the next stage, check Proxy connectivity, the Squid access policy, DNS or the related server.

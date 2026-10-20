@@ -1,0 +1,17 @@
+MNNIT Network Support Knowledge Base
+Category: Approved corrective measures
+Topic: Setting the room's Static IP when a student has installed a new laptop or reinstalled Windows
+
+Situation: The student has installed a new laptop or reinstalled Windows. Here the old network configuration is often not present, or the Static IP is not set.
+
+Message to send to the student:
+If you have installed a new laptop or reinstalled Windows, please:
+- Press Windows + R.
+- Open ncpa.cpl.
+- Open Ethernet -> Properties -> Internet Protocol Version 4 (TCP/IPv4).
+- Enter the Static IP settings prescribed for your Room.
+- Run ipconfig in CMD and verify the IP and Gateway.
+- Run ping 172.31.100.1.
+- When you get a Gateway Reply, check the Proxy settings in inetcpl.cpl.
+
+If your details are not clear in the Room-wise IP List, contact the Technician.

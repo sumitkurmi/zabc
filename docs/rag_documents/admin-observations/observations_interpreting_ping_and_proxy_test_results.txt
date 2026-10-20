@@ -1,0 +1,30 @@
+MNNIT Network Support Knowledge Base
+Category: Network administrator observations
+Topic: How to interpret ping, gateway and proxy test results
+
+1. A correct IP does not guarantee connectivity
+Even when the IP is correct, the Gateway ping can fail.
+
+2. A successful gateway ping does not prove internet access
+A successful Gateway ping does not by itself prove that the Proxy or the internet is available.
+
+3. A failed ping is not proof that the internet is down
+A failed ping alone is not proof that the internet is down; some networks block ICMP traffic. The ping to 8.8.8.8 gives a useful indication of external connectivity only if ICMP is allowed.
+
+4. Reading the gateway ping result
+- A Reply means connectivity from the laptop to the Gateway is available, so the Proxy setting should be checked next.
+- Request timed out or Destination host unreachable means the IP, subnet mask, cable or switch port may need to be checked.
+- If the Gateway ping works but 8.8.8.8 does not, upstream connectivity or network policy has to be checked.
+
+5. Limits of the proxy checks
+- netsh winhttp show proxy shows the WinHTTP Proxy; it does not show all of Chrome's Proxy settings.
+- In Test-NetConnection, TcpTestSucceeded : True means that a TCP connection could be made; this alone does not prove that Squid is serving browsing correctly.
+
+6. Many users affected at the same time
+If many students are getting a Proxy Error at the same time, it may also be a problem with the Proxy Server or upstream connectivity. If the internet is down in many rooms at once, check the AP/uplink, distribution switch, OFC link, DHCP, core routing and the related Proxy/Internet gateway instead of looking at individual laptops.
+
+7. Mobile versus laptop
+The network configuration of a mobile and a laptop can be different, so a working mobile does not mean the laptop's Proxy settings are correct.
+
+8. Only one website affected
+If only one website is affected, the problem may be related to that website, DNS, Proxy policy or a certificate.

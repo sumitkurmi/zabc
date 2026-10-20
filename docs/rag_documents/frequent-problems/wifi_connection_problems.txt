@@ -1,0 +1,82 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: Wi-Fi connection problems (steps for the student and checks for the technician)
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: Wi-Fi is connected, but the internet is not working
+
+Message to send to the student by SMS:
+Please do the following:
+- Disconnect from Wi-Fi and reconnect after 10 seconds.
+- Turn the Wi-Fi of the laptop/mobile off and on again.
+- Open 2-3 different websites in Chrome.
+- If it is a laptop, open CMD, run ipconfig and note the IPv4 Address and the Default Gateway.
+- If the problem continues, send a screenshot and your Hostel/Room Number.
+Please do not change the IP Address or Proxy settings without confirmation.
+
+Technician's check: Is the internet also down for other students? Was an IP address obtained? Is the problem with Wi-Fi, the Proxy or the upstream network?
+
+
+PROBLEM: Wi-Fi keeps disconnecting or the signal is weak
+
+Steps for the student:
+- Move the laptop/mobile to another spot in the room and check the Wi-Fi signal.
+- Disconnect and reconnect Wi-Fi.
+- Restart the device and check again.
+- If available, also check Wi-Fi on another device in the same room.
+- Tell us whether the problem is only in one room or on the whole floor/hostel.
+Send the Hostel, Room Number and approximate time.
+
+Technician's check: Check Access Point status, signal strength, interference, client count, roaming and uplink connectivity.
+
+
+PROBLEM: Wi-Fi works on the mobile, but not on the laptop
+
+Steps for the student:
+- Disconnect/reconnect Wi-Fi on the laptop.
+- Restart the laptop.
+- Check the Proxy settings on the laptop.
+- If no IP is obtained, run ipconfig in CMD.
+- If only the laptop is affected, send a screenshot of the Wi-Fi, IP and Proxy settings.
+Before forgetting the campus Wi-Fi and connecting again, make sure you have the correct login details available.
+
+Technician's check: Check device-specific authentication, DHCP lease, MAC registration (if applicable), proxy and the Wi-Fi adapter.
+
+
+PROBLEM: Wi-Fi keeps asking for login again and again
+
+Steps for the student:
+- Make sure you are connected to the correct campus Wi-Fi network.
+- If the login page opens, log in with your authorised credentials.
+- Keep the date and time of the device correct.
+- If the login page does not open, try opening any ordinary HTTPS website in the browser.
+- Do not send your username/password by SMS. Send only a screenshot of the error.
+
+Technician's check: Check the authentication server, captive portal, session expiry and device registration.
+
+
+PROBLEM: Windows shows "No Internet, Secured"
+
+Steps for the student:
+- Disconnect Wi-Fi and connect again.
+- Restart the laptop.
+- Run ipconfig in CMD.
+- Look at the IPv4 Address and the Default Gateway.
+- Check the Proxy settings and send a screenshot of the error.
+If other students' laptops also have the same problem, please tell us.
+
+Technician's check: Check DHCP, gateway reachability, authentication and the Proxy configuration.
+
+
+PROBLEM: Internet still does not work even after a Network Reset
+
+If you have done a Windows Network Reset and the internet is still not working:
+- Restart the laptop.
+- Connect Wi-Fi/LAN again.
+- If required, log in to the authorised Wi-Fi again.
+- Run ipconfig and look at the IP Address and Gateway.
+- Check the Proxy settings again.
+Please do not do Network Reset again and again. If the problem continues, send a screenshot.
+
+Technician's check: Check the adapter configuration, DHCP, Wi-Fi profile, Proxy and driver.
