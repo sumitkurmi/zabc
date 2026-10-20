@@ -24,7 +24,8 @@ from backend.app.routers import (
     public_chat,
     admin_auth,
     admin_chats,
-    admin_reference
+    admin_reference,
+    network_config
 )
 
 # Rate limiter setup
@@ -103,6 +104,7 @@ app.include_router(public_chat.router, prefix="/api")
 app.include_router(admin_auth.router, prefix="/api")
 app.include_router(admin_chats.router, prefix="/api")
 app.include_router(admin_reference.router, prefix="/api")
+app.include_router(network_config.router, prefix="/api")
 
 
 # Serve frontend static assets if built
