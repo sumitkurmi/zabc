@@ -12,6 +12,14 @@ import { ReferenceHome } from './pages/admin/ReferenceHome';
 import { CategoryPage } from './pages/admin/CategoryPage';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 
+import { Overview } from './pages/admin/network-assets/Overview';
+import { AssetList } from './pages/admin/network-assets/AssetList';
+import { AssetForm } from './pages/admin/network-assets/AssetForm';
+import { AssetDetail } from './pages/admin/network-assets/AssetDetail';
+import { Locations } from './pages/admin/network-assets/Locations';
+import { SwitchPorts } from './pages/admin/network-assets/SwitchPorts';
+import { Stock } from './pages/admin/network-assets/Stock';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -30,6 +38,70 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets',
+    element: (
+      <ProtectedRoute>
+        <Overview />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/list',
+    element: (
+      <ProtectedRoute>
+        <AssetList />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/new',
+    element: (
+      <ProtectedRoute>
+        <AssetForm />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/:id/edit',
+    element: (
+      <ProtectedRoute>
+        <AssetForm />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/:id',
+    element: (
+      <ProtectedRoute>
+        <AssetDetail />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/locations',
+    element: (
+      <ProtectedRoute>
+        <Locations />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/switches/:id/ports',
+    element: (
+      <ProtectedRoute>
+        <SwitchPorts />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/network-assets/stock',
+    element: (
+      <ProtectedRoute>
+        <Stock />
       </ProtectedRoute>
     ),
   },
