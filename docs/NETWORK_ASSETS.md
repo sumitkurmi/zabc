@@ -145,13 +145,42 @@ Returns summary metrics card totals.
   - `frontend/src/pages/admin/network-assets/`: `Overview.tsx`, `AssetList.tsx`, `AssetForm.tsx`, `AssetDetail.tsx`, `Locations.tsx`, `SwitchPorts.tsx`, `Stock.tsx`
 - **Scripts & Docs**:
   - `scripts_db/create_network_assets_indexes.py`
+  - `scripts_db/seed_locations_helper.py`
   - `scripts_db/seed_network_assets_demo.py`
+  - `scripts_db/seed_network_assets_extended.py`
   - `docs/NETWORK_ASSETS.md`
 - **Tests**: `backend/tests/test_network_assets.py`
 
 ---
 
-## 7. Execution Commands
+## 7. Seed Data
+
+The module provides two database seed scripts located under `scripts_db/`:
+
+### 1. Demo Seed (`scripts_db/seed_network_assets_demo.py`)
+- **Purpose**: Cleans up old placeholder locations and seeds concise demo assets, switch ports, and stock items tied to real MNNIT campus locations.
+- **Execution**:
+  ```bash
+  PYTHONPATH=. python3 scripts_db/seed_network_assets_demo.py
+  ```
+
+### 2. Extended Seed (`scripts_db/seed_network_assets_extended.py`)
+- **Purpose**: Inserts a comprehensive dataset covering all 10 asset categories (~70 assets), realistic makes and models (Cisco, Aruba, Fortinet, APC, etc.), 8+ switches with mapped ports, 16+ stock items with transactional history, active/expiring/expired warranty scenarios, and maintenance histories.
+- **Marks Data**: All created asset serials, tags, and stock models are prefixed with `EXT-`.
+- **Execution & Cleanup**:
+  ```bash
+  # Insert extended test dataset
+  PYTHONPATH=. python3 scripts_db/seed_network_assets_extended.py
+
+  # Remove ONLY extended test records (prefixed with EXT-) without touching demo or real data
+  PYTHONPATH=. python3 scripts_db/seed_network_assets_extended.py --remove
+  ```
+
+---
+
+## 8. Execution Commands
 - Create Indexes: `PYTHONPATH=. python3 scripts_db/create_network_assets_indexes.py`
 - Seed Demo Data: `PYTHONPATH=. python3 scripts_db/seed_network_assets_demo.py`
+- Seed Extended Data: `PYTHONPATH=. python3 scripts_db/seed_network_assets_extended.py`
+- Remove Extended Data: `PYTHONPATH=. python3 scripts_db/seed_network_assets_extended.py --remove`
 - Run Tests: `PYTHONPATH=. pytest backend/tests/test_network_assets.py`
