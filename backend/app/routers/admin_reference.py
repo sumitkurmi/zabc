@@ -3,6 +3,7 @@
 Specification Section 9.4 & Section 10.
 Handles listing reference categories, uploading PDF/DOCX/TXT files, file size & type validation,
 document status polling, file downloading, and deletion.
+Excludes empty chats (message_count < 1) from category chat lists and counts.
 """
 
 import os
@@ -39,16 +40,18 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
 
 @router.get("/categories", response_model=list[CategorySummaryResponse])
 async def list_categories(admin_username: str = Depends(require_admin)):
-    """Lists six reference categories with chat and document counts."""
+    """Lists six reference categories with chat and document counts (excluding empty chats)."""
     db = get_database()
     categories_cursor = db.reference_categories.find({})
 
     categories = []
     async for cat in categories_cursor:
         slug = cat["slug"]
+        # Safety net: Exclude empty chats with message_count < 1
         chats_count = await db.chats.count_documents({
             "status": "REFERENCE",
-            "reference_category_slug": slug
+            "reference_category_slug": slug,
+            "message_count": {"$gte": 1}
         })
         documents_count = await db.documents.count_documents({
             "category_slug": slug,
@@ -73,15 +76,17 @@ async def get_category_detail(
     slug: str,
     admin_username: str = Depends(require_admin)
 ):
-    """Returns detailed category view including assigned chats and uploaded documents."""
+    """Returns detailed category view including assigned chats and uploaded documents (excluding empty chats)."""
     db = get_database()
     cat = await db.reference_categories.find_one({"slug": slug})
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    # Safety net: Exclude empty chats with message_count < 1
     chats_count = await db.chats.count_documents({
         "status": "REFERENCE",
-        "reference_category_slug": slug
+        "reference_category_slug": slug,
+        "message_count": {"$gte": 1}
     })
     documents_count = await db.documents.count_documents({
         "category_slug": slug,
@@ -96,10 +101,11 @@ async def get_category_detail(
         documents_count=documents_count
     )
 
-    # Fetch assigned reference chats
+    # Fetch assigned reference chats (excluding empty chats)
     chats_cursor = db.chats.find({
         "status": "REFERENCE",
-        "reference_category_slug": slug
+        "reference_category_slug": slug,
+        "message_count": {"$gte": 1}
     }).sort("moved_at", -1)
 
     chats_list = []

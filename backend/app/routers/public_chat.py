@@ -36,28 +36,41 @@ async def find_chat_by_id(chat_id: str):
 
 @router.post("", response_model=ChatCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat(request: Request):
-    """Creates a new anonymous student chat session."""
-    db = get_database()
-    chat_doc = {
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-        "message_count": 0,
-        "detected_category": None,
-        "status": "UNASSIGNED",
-        "reference_category_slug": None,
-        "moved_at": None,
-        "messages": []
-    }
-    result = await db.chats.insert_one(chat_doc)
-    return ChatCreateResponse(chat_id=str(result.inserted_id))
+    """Generates a new chat session ID without storing a document in MongoDB yet.
+
+    Lazy chat creation: To prevent storing empty chat documents when users open
+    the chat panel or click 'New chat' without typing anything, no document is inserted
+    at session start. The document is only created upon the first user message.
+    """
+    # Simply generate a new ObjectId and return it as chat_id
+    new_chat_id = str(ObjectId())
+    return ChatCreateResponse(chat_id=new_chat_id)
 
 
 @router.get("/{chat_id}", response_model=ChatTranscriptResponse)
 async def get_chat_transcript(chat_id: str):
-    """Fetches full chat transcript for page refresh restore."""
+    """Fetches full chat transcript for page refresh restore.
+
+    If the chat ID is a valid ObjectId format but has no document stored in MongoDB yet
+    (due to lazy chat creation), return an empty transcript instead of 404.
+    """
+    # Validate ObjectId format
+    try:
+        obj_id = ObjectId(chat_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid chat session ID format")
+
     chat = await find_chat_by_id(chat_id)
+
+    # If no document is stored yet, return empty transcript response
     if not chat:
-        raise HTTPException(status_code=404, detail="Chat session not found")
+        return ChatTranscriptResponse(
+            chat_id=chat_id,
+            message_count=0,
+            messages_remaining=settings.MAX_CHAT_MESSAGES,
+            detected_category=None,
+            messages=[]
+        )
 
     messages = [
         ChatTurnSchema(

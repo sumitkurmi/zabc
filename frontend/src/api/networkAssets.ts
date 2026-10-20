@@ -1,9 +1,6 @@
 // MODULE: Network Asset and Stock Management - this file belongs to the code for this module.
 // REST API client functions for Network Asset and Stock Management endpoints.
 
-// MODULE: Network Asset and Stock Management - this file belongs to the code for this module.
-// REST API client functions for Network Asset and Stock Management endpoints.
-
 import { fetchApi } from './client';
 
 const API_BASE = '/admin/network-assets';

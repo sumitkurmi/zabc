@@ -8,6 +8,7 @@ from backend.app.network_assets.models import (
     AssetStatus,
     LocationType,
     MaintenanceRecord,
+    StatusChangeRecord,
     StockItem,
     StockTransaction
 )
@@ -54,12 +55,12 @@ class AssetService:
         # Record initial status in status_history
         init_status = asset_obj.status.value if hasattr(asset_obj.status, "value") else str(asset_obj.status)
         now_str = datetime.utcnow().isoformat()
-        asset_obj.status_history.append({
-            "status": init_status,
-            "changed_at": now_str,
-            "changed_by": data.get("installed_by", "admin"),
-            "reason": "Initial asset creation"
-        })
+        asset_obj.status_history.append(StatusChangeRecord(
+            status=init_status,
+            changed_at=now_str,
+            changed_by=data.get("installed_by", "admin"),
+            reason="Initial asset creation"
+        ))
 
         asset_dict = asset_obj.to_dict()
         return await NetworkAssetRepository.create_asset(asset_dict)
