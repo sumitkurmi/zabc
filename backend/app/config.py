@@ -45,6 +45,7 @@ class Settings(BaseSettings):
 
     # Provider Models
     GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_TIMEOUT: float = 60.0  # Configurable Gemini timeout in seconds (default 60s)
     OPENAI_MODEL: str = "gpt-4o-mini"
     GROK_MODEL: str = "grok-beta"
     LLM_MODEL_CHAT: str = "claude-3-5-sonnet-20241022"
