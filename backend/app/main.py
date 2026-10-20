@@ -27,6 +27,7 @@ from backend.app.routers import (
     admin_chats,
     admin_reference
 )
+from backend.app.network_assets.router import router as network_assets_router
 
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/hour"])
@@ -107,6 +108,7 @@ app.include_router(public_chat.router, prefix="/api")
 app.include_router(admin_auth.router, prefix="/api")
 app.include_router(admin_chats.router, prefix="/api")
 app.include_router(admin_reference.router, prefix="/api")
+app.include_router(network_assets_router, prefix="/api")
 
 
 # Serve frontend static assets with server-side route guards
