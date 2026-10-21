@@ -2,6 +2,7 @@
 
 Handles starting chat sessions, sending messages, fetching transcript history, and AI summarization.
 Specification Section 5.4, Section 10.
+Incorporates per-request FlowTrace timing traces for message and summarize endpoints.
 """
 
 from datetime import datetime
@@ -18,6 +19,7 @@ from backend.app.schemas import (
     SummarizeResponse
 )
 from backend.app.services.chat_service import process_chat_message, summarize_chat_transcript
+from backend.app.utils.flow_trace import FlowTrace
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -36,25 +38,14 @@ async def find_chat_by_id(chat_id: str):
 
 @router.post("", response_model=ChatCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat(request: Request):
-    """Generates a new chat session ID without storing a document in MongoDB yet.
-
-    Lazy chat creation: To prevent storing empty chat documents when users open
-    the chat panel or click 'New chat' without typing anything, no document is inserted
-    at session start. The document is only created upon the first user message.
-    """
-    # Simply generate a new ObjectId and return it as chat_id
+    """Generates a new chat session ID without storing a document in MongoDB yet."""
     new_chat_id = str(ObjectId())
     return ChatCreateResponse(chat_id=new_chat_id)
 
 
 @router.get("/{chat_id}", response_model=ChatTranscriptResponse)
 async def get_chat_transcript(chat_id: str):
-    """Fetches full chat transcript for page refresh restore.
-
-    If the chat ID is a valid ObjectId format but has no document stored in MongoDB yet
-    (due to lazy chat creation), return an empty transcript instead of 404.
-    """
-    # Validate ObjectId format
+    """Fetches full chat transcript for page refresh restore."""
     try:
         obj_id = ObjectId(chat_id)
     except Exception:
@@ -62,7 +53,6 @@ async def get_chat_transcript(chat_id: str):
 
     chat = await find_chat_by_id(chat_id)
 
-    # If no document is stored yet, return empty transcript response
     if not chat:
         return ChatTranscriptResponse(
             chat_id=chat_id,
@@ -95,21 +85,29 @@ async def get_chat_transcript(chat_id: str):
 
 @router.post("/{chat_id}/message", response_model=ChatMessageResponse)
 async def send_chat_message(chat_id: str, data: ChatMessageRequest, request: Request):
-    """Sends a user message turn in a student chat session."""
-    result, status_code = await process_chat_message(chat_id=chat_id, user_content=data.content)
-    if status_code != 200:
-        err = result.get("error", {})
-        raise HTTPException(status_code=status_code, detail=err.get("message", "Chat error"))
-
-    return ChatMessageResponse(**result)
+    """Sends a user message turn in a student chat session with end-to-end FlowTrace timing."""
+    trace = FlowTrace("chat.message", chat_id=chat_id)
+    with trace:
+        try:
+            result, status_code = await process_chat_message(chat_id=chat_id, user_content=data.content)
+            if status_code != 200:
+                err = result.get("error", {})
+                raise HTTPException(status_code=status_code, detail=err.get("message", "Chat error"))
+            return ChatMessageResponse(**result)
+        finally:
+            trace.finish()
 
 
 @router.post("/{chat_id}/summarize", response_model=SummarizeResponse)
 async def summarize_chat(chat_id: str, request: Request):
-    """Summarizes chat transcript into complaint form pre-fill fields."""
-    result, status_code = await summarize_chat_transcript(chat_id=chat_id)
-    if status_code != 200:
-        err = result.get("error", {})
-        raise HTTPException(status_code=status_code, detail=err.get("message", "Summarization error"))
-
-    return SummarizeResponse(**result)
+    """Summarizes chat transcript into complaint form pre-fill fields with FlowTrace timing."""
+    trace = FlowTrace("chat.summarize", chat_id=chat_id)
+    with trace:
+        try:
+            result, status_code = await summarize_chat_transcript(chat_id=chat_id)
+            if status_code != 200:
+                err = result.get("error", {})
+                raise HTTPException(status_code=status_code, detail=err.get("message", "Summarization error"))
+            return SummarizeResponse(**result)
+        finally:
+            trace.finish()

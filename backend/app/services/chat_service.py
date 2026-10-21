@@ -3,6 +3,7 @@
 Specification Sections 4, 5.4, 6, 8.3.
 Uses LLMRouter multi-provider fallback orchestrator.
 Lazy chat creation logic ensures chat documents are only created in MongoDB upon the first message.
+Integrates per-request FlowTrace timing steps.
 """
 
 import os
@@ -15,6 +16,7 @@ from backend.app.models import ProblemType, ChatMessage
 from backend.app.services.rag_service import retrieve_context
 from backend.app.services.llm_router import llm_router
 from backend.app.services.category_map import map_symptom_to_category
+from backend.app.utils.flow_trace import get_current_trace, DummyStepContext
 
 FIXED_OFF_TOPIC_REFUSAL = (
     "I can only help with network-related issues such as Wi-Fi, LAN, login, IP, DNS, "
@@ -44,36 +46,39 @@ async def find_chat_in_db(chat_id: str):
 
 
 async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[str, Any], int]:
-    """Processes a student message turn using LLMRouter multi-provider fallback.
+    """Processes a student message turn using LLMRouter multi-provider fallback with step timing trace.
 
     Lazy Creation Logic:
     - Validate chat_id format (must be valid ObjectId).
     - If the message is rejected before being accepted (empty text, too long), store nothing.
     - Check message limit (MAX_CHAT_MESSAGES).
     - Perform guard/classification & RAG generation.
-    - Upsert chat document atomically using $setOnInsert for creation fields and $push for turns,
-      ensuring two rapid initial messages cannot create duplicate records.
-
-    Returns:
-        Tuple of (response_dict, http_status_code)
+    - Upsert chat document atomically using $setOnInsert for creation fields and $push for turns.
     """
-    # Validate chat_id format
-    try:
-        obj_id = ObjectId(chat_id)
-    except Exception:
-        return {"error": {"code": "INVALID_ID", "message": "Invalid chat session ID format"}}, 400
+    trace = get_current_trace()
 
-    # Reject empty or overly long messages before storing anything
-    user_content_clean = user_content.strip()
-    if not user_content_clean:
-        return {"error": {"code": "EMPTY_MESSAGE", "message": "Message content cannot be empty"}}, 400
-    if len(user_content_clean) > 500:
-        return {"error": {"code": "MESSAGE_TOO_LONG", "message": "Message exceeds 500 character limit"}}, 400
+    # Step 1: request.validate
+    validate_step = trace.step("request.validate") if trace else DummyStepContext()
+    with validate_step:
+        try:
+            obj_id = ObjectId(chat_id)
+        except Exception:
+            return {"error": {"code": "INVALID_ID", "message": "Invalid chat session ID format"}}, 400
+
+        user_content_clean = user_content.strip()
+        if not user_content_clean:
+            return {"error": {"code": "EMPTY_MESSAGE", "message": "Message content cannot be empty"}}, 400
+        if len(user_content_clean) > 500:
+            return {"error": {"code": "MESSAGE_TOO_LONG", "message": "Message exceeds 500 character limit"}}, 400
 
     db = get_database()
-    chat = await find_chat_in_db(chat_id)
 
-    # Check 10 user message limit (Section 5.4 & 6.2)
+    # Step 2: db.load_chat
+    load_step = trace.step("db.load_chat") if trace else DummyStepContext()
+    with load_step:
+        chat = await find_chat_in_db(chat_id)
+
+    # Check 10 user message limit
     current_count = chat.get("message_count", 0) if chat else 0
     if current_count >= settings.MAX_CHAT_MESSAGES:
         return {
@@ -83,8 +88,11 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
             }
         }, 429
 
-    # Step 1: Guard & Classify via LLMRouter fallback orchestrator
-    guard_result = await llm_router.guard_and_classify(user_content_clean)
+    # Step 3: guard.classify
+    guard_step = trace.step("guard.classify") if trace else DummyStepContext()
+    with guard_step:
+        guard_result = await llm_router.guard_and_classify(user_content_clean)
+
     is_on_topic = guard_result.get("on_topic", True)
     category_str = guard_result.get("category")
 
@@ -97,7 +105,6 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
     new_count = current_count + 1
     now_dt = datetime.utcnow()
 
-    # Record user message turn
     user_turn = {
         "role": "user",
         "content": user_content_clean,
@@ -106,11 +113,9 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
         "source_doc_ids": []
     }
 
-    # Prepare document update fields
     mongo_id = chat["_id"] if chat else obj_id
 
     if not is_on_topic:
-        # Fixed refusal reply
         bot_turn = {
             "role": "assistant",
             "content": FIXED_OFF_TOPIC_REFUSAL,
@@ -119,25 +124,26 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
             "source_doc_ids": []
         }
 
-        # Lazy creation via atomic upsert
-        await db.chats.update_one(
-            {"_id": mongo_id},
-            {
-                "$setOnInsert": {
-                    "created_at": now_dt,
-                    "status": "UNASSIGNED",
-                    "reference_category_slug": None,
-                    "moved_at": None,
+        save_step = trace.step("db.save_messages") if trace else DummyStepContext()
+        with save_step:
+            await db.chats.update_one(
+                {"_id": mongo_id},
+                {
+                    "$setOnInsert": {
+                        "created_at": now_dt,
+                        "status": "UNASSIGNED",
+                        "reference_category_slug": None,
+                        "moved_at": None,
+                    },
+                    "$set": {
+                        "message_count": new_count,
+                        "updated_at": datetime.utcnow(),
+                        "detected_category": detected_category.value if detected_category else None
+                    },
+                    "$push": {"messages": {"$each": [user_turn, bot_turn]}}
                 },
-                "$set": {
-                    "message_count": new_count,
-                    "updated_at": datetime.utcnow(),
-                    "detected_category": detected_category.value if detected_category else None
-                },
-                "$push": {"messages": {"$each": [user_turn, bot_turn]}}
-            },
-            upsert=True
-        )
+                upsert=True
+            )
 
         return {
             "reply": FIXED_OFF_TOPIC_REFUSAL,
@@ -147,7 +153,7 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
             "messages_remaining": settings.MAX_CHAT_MESSAGES - new_count
         }, 200
 
-    # Step 2: On-topic -> RAG Retrieval & Answering
+    # Step 4: rag.retrieve (handled in retrieve_context)
     category_slug = chat.get("reference_category_slug") if chat else None
     retrieved_chunks = retrieve_context(query=user_content_clean, category_slug=category_slug, top_k=6)
 
@@ -164,20 +170,27 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
             context_parts.append(f"[Source: {filename}]\n{chunk['text']}")
         context_str = "\n\n".join(context_parts)
 
-    system_template = load_prompt_template("chat_system.txt")
-    system_prompt = system_template.format(retrieved_chunks=context_str if context_str else "No context found.")
+    # Step 5: prompt.build
+    prompt_step = trace.step("prompt.build") if trace else DummyStepContext()
+    with prompt_step:
+        system_template = load_prompt_template("chat_system.txt")
+        system_prompt = system_template.format(retrieved_chunks=context_str if context_str else "No context found.")
+        if hasattr(prompt_step, "add"):
+            prompt_step.add(chars=len(system_prompt))
 
-    # Build history turns
     history = []
     if chat:
-        for msg in chat.get("messages", [])[-6:]:  # recent 3 turns
+        for msg in chat.get("messages", [])[-6:]:
             history.append({"role": msg["role"], "content": msg["content"]})
 
-    reply_text = await llm_router.generate_answer(
-        system_prompt=system_prompt,
-        user_message=user_content_clean,
-        history=history
-    )
+    # Step 6: llm.generate
+    gen_step = trace.step("llm.generate") if trace else DummyStepContext()
+    with gen_step:
+        reply_text = await llm_router.generate_answer(
+            system_prompt=system_prompt,
+            user_message=user_content_clean,
+            history=history
+        )
 
     bot_turn = {
         "role": "assistant",
@@ -194,21 +207,23 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
     if detected_category:
         update_fields["detected_category"] = detected_category.value
 
-    # Lazy creation via atomic upsert
-    await db.chats.update_one(
-        {"_id": mongo_id},
-        {
-            "$setOnInsert": {
-                "created_at": now_dt,
-                "status": "UNASSIGNED",
-                "reference_category_slug": None,
-                "moved_at": None,
+    # Step 7: db.save_messages
+    save_step = trace.step("db.save_messages") if trace else DummyStepContext()
+    with save_step:
+        await db.chats.update_one(
+            {"_id": mongo_id},
+            {
+                "$setOnInsert": {
+                    "created_at": now_dt,
+                    "status": "UNASSIGNED",
+                    "reference_category_slug": None,
+                    "moved_at": None,
+                },
+                "$set": update_fields,
+                "$push": {"messages": {"$each": [user_turn, bot_turn]}}
             },
-            "$set": update_fields,
-            "$push": {"messages": {"$each": [user_turn, bot_turn]}}
-        },
-        upsert=True
-    )
+            upsert=True
+        )
 
     return {
         "reply": reply_text,
@@ -221,13 +236,18 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
 
 async def summarize_chat_transcript(chat_id: str) -> Tuple[Dict[str, Any], int]:
     """Generates problem type and comment summary from transcript via LLMRouter for auto-filling complaint form."""
-    # Validate ObjectId
+    trace = get_current_trace()
+
     try:
         ObjectId(chat_id)
     except Exception:
         return {"error": {"code": "INVALID_ID", "message": "Invalid chat session ID format"}}, 400
 
-    chat = await find_chat_in_db(chat_id)
+    # Step 1: db.load_chat
+    load_step = trace.step("db.load_chat") if trace else DummyStepContext()
+    with load_step:
+        chat = await find_chat_in_db(chat_id)
+
     if not chat:
         return {"error": {"code": "NO_MESSAGES", "message": "At least one user message is required to summarize."}}, 400
 
@@ -242,17 +262,22 @@ async def summarize_chat_transcript(chat_id: str) -> Tuple[Dict[str, Any], int]:
         transcript_lines.append(f"{role}: {m.get('content')}")
     full_transcript = "\n".join(transcript_lines)
 
-    summary_data = await llm_router.summarize_transcript(full_transcript)
+    # Step 2: llm.summarize
+    sum_step = trace.step("llm.summarize") if trace else DummyStepContext()
+    with sum_step:
+        summary_data = await llm_router.summarize_transcript(full_transcript)
 
-    # Validate problem type
-    pt_val = summary_data.get("problem_type")
-    if not pt_val or pt_val not in [pt.value for pt in ProblemType]:
-        cat = map_symptom_to_category(full_transcript) or ProblemType.WIFI_PROBLEM
-        pt_val = cat.value
+    # Step 3: json.parse
+    parse_step = trace.step("json.parse") if trace else DummyStepContext()
+    with parse_step:
+        pt_val = summary_data.get("problem_type")
+        if not pt_val or pt_val not in [pt.value for pt in ProblemType]:
+            cat = map_symptom_to_category(full_transcript) or ProblemType.WIFI_PROBLEM
+            pt_val = cat.value
 
-    comment = summary_data.get("additional_comment", "").strip()
-    if not comment:
-        comment = " ".join([m.get("content", "") for m in user_messages])[:500]
+        comment = summary_data.get("additional_comment", "").strip()
+        if not comment:
+            comment = " ".join([m.get("content", "") for m in user_messages])[:500]
 
     return {
         "problem_type": pt_val,

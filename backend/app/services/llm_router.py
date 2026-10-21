@@ -3,6 +3,7 @@
 Iterates through LLM_PROVIDER_ORDER (e.g., gemini -> openai -> grok -> anthropic -> mock),
 catching errors/rate-limits/connection issues, logging detailed diagnostic failover events,
 and returning responses from the first available provider.
+Integrates trace logging for individual LLM attempts.
 """
 
 import time
@@ -17,6 +18,7 @@ from backend.app.services.llm_client import (
     AnthropicLLMClient,
     MockLLMClient
 )
+from backend.app.utils.flow_trace import get_current_trace, DummyStepContext
 
 logger = logging.getLogger("llm_router")
 logging.basicConfig(level=logging.INFO)
@@ -91,7 +93,6 @@ class LLMRouter:
         e_str = str(e) or repr(e)
         msg = f"{e_type}: {e_str}"
 
-        # Extract HTTP status and body preview if available
         if hasattr(e, "response") and getattr(e, "response", None) is not None:
             resp = getattr(e, "response")
             status = getattr(resp, "status_code", "N/A")
@@ -105,12 +106,16 @@ class LLMRouter:
         """Runs guard and classification with multi-provider fallback."""
         clients = self.get_configured_providers()
         real_failed = False
+        trace = get_current_trace()
 
         for client in clients:
             start_t = time.perf_counter()
             model_name = getattr(client, "model", "n/a")
+            step_ctx = trace.step("llm.attempt", provider=client.provider_name, model=model_name) if trace else DummyStepContext()
+
             try:
-                res = await client.guard_and_classify(user_message)
+                with step_ctx:
+                    res = await client.guard_and_classify(user_message)
                 elapsed = time.perf_counter() - start_t
                 logger.info(f"[LLMRouter] guard_and_classify served by provider '{client.provider_name}' (model={model_name}) in {elapsed:.2f}s")
                 return res
@@ -128,7 +133,6 @@ class LLMRouter:
         if real_failed:
             logger.warning("ALL REAL PROVIDERS FAILED - using mock answer")
 
-        # Ultimate fallback to mock
         return await self.providers["mock"].guard_and_classify(user_message)
 
     async def generate_answer(
@@ -140,12 +144,16 @@ class LLMRouter:
         """Generates answer with multi-provider fallback."""
         clients = self.get_configured_providers()
         real_failed = False
+        trace = get_current_trace()
 
         for client in clients:
             start_t = time.perf_counter()
             model_name = getattr(client, "model", "n/a")
+            step_ctx = trace.step("llm.attempt", provider=client.provider_name, model=model_name) if trace else DummyStepContext()
+
             try:
-                res = await client.generate_answer(system_prompt, user_message, history)
+                with step_ctx:
+                    res = await client.generate_answer(system_prompt, user_message, history)
                 elapsed = time.perf_counter() - start_t
                 logger.info(f"[LLMRouter] generate_answer served by provider '{client.provider_name}' (model={model_name}) in {elapsed:.2f}s")
                 return res
@@ -169,12 +177,16 @@ class LLMRouter:
         """Summarizes transcript with multi-provider fallback."""
         clients = self.get_configured_providers()
         real_failed = False
+        trace = get_current_trace()
 
         for client in clients:
             start_t = time.perf_counter()
             model_name = getattr(client, "model", "n/a")
+            step_ctx = trace.step("llm.attempt", provider=client.provider_name, model=model_name) if trace else DummyStepContext()
+
             try:
-                res = await client.summarize_transcript(transcript_text)
+                with step_ctx:
+                    res = await client.summarize_transcript(transcript_text)
                 elapsed = time.perf_counter() - start_t
                 logger.info(f"[LLMRouter] summarize_transcript served by provider '{client.provider_name}' (model={model_name}) in {elapsed:.2f}s")
                 return res

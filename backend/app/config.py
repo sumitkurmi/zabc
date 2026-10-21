@@ -7,6 +7,7 @@ Key Configurations:
 - Database connection (MongoDB URI and database name)
 - Admin authentication parameters (username, bcrypt password hash, JWT secret)
 - Multi-provider LLM & Vector Store settings (Gemini, OpenAI, Grok, Anthropic, Mock)
+- Flow Trace settings (FLOW_TRACE, FLOW_TRACE_SLOW_MS)
 - Application rules (Max chat messages limit, upload file size cap)
 """
 
@@ -50,6 +51,10 @@ class Settings(BaseSettings):
     GROK_MODEL: str = "grok-beta"
     LLM_MODEL_CHAT: str = "claude-3-5-sonnet-20241022"
     LLM_MODEL_GUARD: str = "claude-3-5-haiku-20241022"
+
+    # Flow Trace Configuration
+    FLOW_TRACE: bool = True
+    FLOW_TRACE_SLOW_MS: float = 3000.0
 
     # Vector Store & Embeddings Settings
     EMBEDDING_PROVIDER: str = "local"
