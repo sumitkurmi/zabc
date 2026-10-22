@@ -124,7 +124,7 @@ async def get_category_detail(
         )
 
     # Fetch category documents
-    docs_cursor = db.documents.find({"category_slug": slug}).sort("uploaded_at", -1)
+    docs_cursor = db.documents.find({"category_slug": slug,"source_type": DocumentSourceType.UPLOAD}).sort("uploaded_at", -1)
     docs_list = []
     async for doc in docs_cursor:
         docs_list.append(
