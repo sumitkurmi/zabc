@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getCategoryDetail, uploadDocument, deleteDocument, unassignChatFromReference } from '../../api/admin';
+import { getCategoryDetail, uploadDocument, deleteDocument, unassignChatFromReference, previewDocument, getAdminChatDetail, } from '../../api/admin';
 import { CategoryDetailResponse } from '../../types';
 import { UploadDropzone } from '../../components/admin/UploadDropzone';
+import { renderAsync } from 'docx-preview';
+
+
 import {
   Folder,
   ArrowLeft,
@@ -13,7 +16,8 @@ import {
   RotateCcw,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Eye,
 } from 'lucide-react';
 
 export const CategoryPage: React.FC = () => {
@@ -24,6 +28,77 @@ export const CategoryPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'documents' | 'chats'>('documents');
   const [toast, setToast] = useState<string | null>(null);
   const navigate = useNavigate();
+
+
+  const [previewContent, setPreviewContent] = useState('');
+  const [previewFileName, setPreviewFileName] = useState('');
+  const [previewType, setPreviewType] = useState<'pdf' | 'docx' | 'text'>('text');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  const [isDocumentPickerOpen, setIsDocumentPickerOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'document' | 'chat'>('document');
+
+  const docxPreviewRef = useRef<HTMLDivElement | null>(null);
+
+
+  useEffect(() => {
+    if (
+      !isPreviewOpen ||
+      isPreviewLoading ||
+      previewMode !== 'document' ||
+      previewType !== 'docx' ||
+      !docxPreviewRef.current ||
+      !previewContent
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const renderDocx = async () => {
+      const container = docxPreviewRef.current;
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      try {
+        const response = await fetch(previewContent);
+        if (!response.ok) {
+          throw new Error('Unable to read DOCX file');
+        }
+
+        const blob = await response.blob();
+
+        if (cancelled) return;
+
+        await renderAsync(blob, container, undefined, {
+          inWrapper: true,
+          breakPages: true,
+        });
+      } catch (error) {
+        if (!cancelled) {
+          container.textContent =
+            error instanceof Error
+              ? error.message
+              : 'Unable to render DOCX preview.';
+        }
+      }
+    };
+
+    void renderDocx();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isPreviewOpen,
+    isPreviewLoading,
+    previewMode,
+    previewType,
+    previewContent,
+  ]);
+
 
   const fetchCategory = () => {
     if (!categoryId) return;
@@ -68,6 +143,62 @@ export const CategoryPage: React.FC = () => {
       alert(err.message || 'Failed to delete document');
     }
   };
+
+
+
+  const handlePreview = async (docId: string, fileName: string) => {
+    setPreviewMode('document');
+    setPreviewFileName(fileName);
+    setPreviewContent('');
+    setPreviewType('text');
+    setIsPreviewOpen(true);
+    setIsPreviewLoading(true);
+
+    try {
+      const result = await previewDocument(docId);
+      setPreviewContent(result.content);
+      setPreviewType(result.type);
+    } catch (error) {
+      setPreviewContent(
+        `Unable to preview file: ${error instanceof Error ? error.message : 'Something went wrong'
+        }`
+      );
+      setPreviewType('text');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleChatPreview = async (chatId: string, chatPreview: string) => {
+    setPreviewMode('chat');
+    setPreviewFileName('Chat Transcript');
+    setPreviewContent('');
+    setPreviewType('text');
+    setIsPreviewOpen(true);
+    setIsPreviewLoading(true);
+
+    try {
+      const result = await getAdminChatDetail(chatId);
+
+      const transcript = result.messages
+        .map((message) => {
+          const role = message.role === 'user' ? 'Student' : 'Assistant';
+          return `${role}:\n${message.content}`;
+        })
+        .join('\n\n');
+
+      setPreviewContent(transcript || chatPreview || 'No messages found.');
+    } catch (error) {
+      setPreviewContent(
+        `Unable to load chat transcript: ${error instanceof Error ? error.message : 'Something went wrong'
+        }`
+      );
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+
 
   const handleRemoveChat = async (chatId: string) => {
     if (!window.confirm('Remove chat from reference category?')) return;
@@ -128,11 +259,10 @@ export const CategoryPage: React.FC = () => {
             <div className="flex border-b border-slate-200 mb-6">
               <button
                 onClick={() => setActiveTab('documents')}
-                className={`pb-3 px-4 font-semibold text-xs flex items-center gap-2 border-b-2 transition-colors ${
-                  activeTab === 'documents'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                className={`pb-3 px-4 font-semibold text-xs flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'documents'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
               >
                 <FileText className="w-4 h-4" />
                 <span>Documents ({data.documents.length})</span>
@@ -140,11 +270,10 @@ export const CategoryPage: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('chats')}
-                className={`pb-3 px-4 font-semibold text-xs flex items-center gap-2 border-b-2 transition-colors ${
-                  activeTab === 'chats'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                className={`pb-3 px-4 font-semibold text-xs flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'chats'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Promoted Chats ({data.chats.length})</span>
@@ -194,6 +323,26 @@ export const CategoryPage: React.FC = () => {
                             </span>
                           )}
 
+
+
+
+                          {/* View uploaded document */}
+                          {doc.source_type === 'UPLOAD' &&
+                            /\.(pdf|txt|docx)$/i.test(doc.original_filename) && (
+                              <button
+                                type="button"
+                                onClick={() => handlePreview(doc.id, doc.original_filename)}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-50"
+                                title="View document"
+                                aria-label={`View ${doc.original_filename}`}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
+
+
+
+
                           {/* Download original */}
                           {doc.source_type === 'UPLOAD' && (
                             <a
@@ -234,12 +383,13 @@ export const CategoryPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <Link
-                            to={`/admin/chats/${chat.id}`}
+                          <button
+                            type="button"
+                            onClick={() => handleChatPreview(chat.id, chat.preview)}
                             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold"
                           >
                             View
-                          </Link>
+                          </button>
                           <button
                             onClick={() => handleRemoveChat(chat.id)}
                             className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold flex items-center gap-1"
@@ -256,6 +406,64 @@ export const CategoryPage: React.FC = () => {
           </div>
         )}
       </main>
+
+
+      {/* Document Preview Modal */}
+
+      {isPreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <FileText className="h-5 w-5 shrink-0 text-blue-600" />
+                <h2 className="truncate text-base font-semibold text-slate-800">
+                  {previewFileName}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (previewType === 'pdf' && previewContent.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewContent);
+                  }
+                  setIsPreviewOpen(false);
+                }}
+                className="ml-4 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              >
+                Close
+              </button>
+            </div>
+
+
+            <div className="min-h-0 flex-1 overflow-auto p-5">
+              {isPreviewLoading ? (
+                <p className="py-8 text-center text-sm text-slate-500">
+                  Loading preview...
+                </p>
+              ) :  previewMode === 'document' && previewType === 'docx' ? (
+              <div
+                ref={docxPreviewRef}
+                className="docx-preview-container min-w-0"
+              />
+              ) : previewMode === 'document' && previewType === 'pdf' ? (
+              <iframe
+                src={previewContent}
+                title={previewFileName}
+                className="h-[70vh] w-full rounded-lg border border-slate-200"
+              />
+              ) : (
+              <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-slate-700">
+                {previewContent}
+              </pre>
+)}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 };

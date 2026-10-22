@@ -19,7 +19,9 @@ from fastapi import (
     BackgroundTasks,
     status
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse, Response
+from docx import Document
+from io import BytesIO
 from backend.app.config import settings
 from backend.app.db import get_database
 from backend.app.deps import require_admin
@@ -30,6 +32,7 @@ from backend.app.schemas import (
     ChatSummaryResponse,
     DocumentResponse
 )
+
 from backend.app.services.rag_service import process_and_index_document, delete_document_and_vectors
 
 router = APIRouter(prefix="/admin", tags=["admin-reference"])
@@ -282,6 +285,71 @@ async def download_document(
         filename=doc.get("original_filename", "download"),
         media_type=doc.get("mime_type", "application/octet-stream")
     )
+
+
+
+
+@router.get("/documents/{doc_id}/preview")
+async def preview_document(
+    doc_id: str,
+    admin_username: str = Depends(require_admin)
+):
+    """Previews an uploaded PDF, TXT, or DOCX document."""
+    db = get_database()
+
+    try:
+        obj_id = ObjectId(doc_id)
+        doc = await db.documents.find_one({"_id": obj_id})
+        if not doc:
+            doc = await db.documents.find_one({"_id": doc_id})
+    except Exception:
+        doc = await db.documents.find_one({"_id": doc_id})
+
+    if not doc or doc.get("source_type") != DocumentSourceType.UPLOAD:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    filename = doc.get("original_filename", "")
+    extension = os.path.splitext(filename)[1].lower()
+
+    if extension not in {".pdf", ".txt", ".docx"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Preview is only available for PDF, TXT, and DOCX files"
+        )
+
+    path = doc.get("storage_path")
+    if not path or not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File content missing from disk")
+
+    if extension == ".pdf":
+        return FileResponse(
+            path=path,
+            media_type="application/pdf",
+            content_disposition_type="inline"
+        )
+
+    if extension == ".txt":
+        try:
+            with open(path, "r", encoding="utf-8-sig") as file:
+                content = file.read()
+        except UnicodeDecodeError:
+            raise HTTPException(
+                status_code=422,
+                detail="TXT file encoding is not supported for preview"
+            )
+
+        return PlainTextResponse(content=content)
+
+    if extension == ".docx":
+        return FileResponse(
+            path=path,
+            media_type=(
+                "application/vnd.openxmlformats-officedocument."
+                "wordprocessingml.document"
+            ),
+            filename=filename
+        )
+
 
 
 @router.delete("/documents/{doc_id}")
