@@ -34,7 +34,10 @@ export const Dashboard: React.FC = () => {
             <h1 className="text-lg font-bold">MNNIT Network Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-xs text-slate-200 hover:text-white underline">
+            <Link
+            to="/"
+           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/80 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors"
+             >
               Student View
             </Link>
             <button
