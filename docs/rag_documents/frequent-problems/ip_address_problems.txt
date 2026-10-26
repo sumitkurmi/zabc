@@ -1,0 +1,48 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: IP address problems (no IP, 169.254.x.x, IP changed manually, correct IP but no internet)
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: Laptop is not getting an IP Address, or 169.254.x.x is shown
+
+Message to send to the student by SMS:
+- In Windows, click Start and open CMD.
+- Type ipconfig and press Enter.
+- Under Wi-Fi or Ethernet, look at the IPv4 Address.
+- If the IP is 169.254.x.x, it normally means that no IP was received from DHCP.
+- If your connection is on DHCP, run ipconfig /release and then ipconfig /renew in CMD.
+- Then run ipconfig again and check.
+If you still do not get an IP, please send a screenshot, your Hostel and Room Number.
+
+Technician's check: Check the DHCP service, VLAN, switch port, Wi-Fi authentication and the IP pool.
+
+Caution: On a connection that uses a Static IP, confirm with the Technician before doing release/renew.
+
+
+PROBLEM: The IP Address is correct, but the internet is not working
+
+Please open CMD and run these commands one by one:
+- ipconfig
+- ping <Default-Gateway-IP>
+- ping 8.8.8.8
+
+From the first command, note the IPv4 Address and the Default Gateway. In the second, use your actual Gateway IP.
+
+If the Gateway ping does not work, it is necessary to check Wi-Fi/LAN, VLAN or the local network. If the Gateway ping works but 8.8.8.8 does not, upstream connectivity or network policy has to be checked.
+
+Send the results of both pings to the Technician.
+
+Important: A failed ping alone is not proof that the internet is down; some networks block ICMP traffic.
+
+
+PROBLEM: Internet stopped working after the IP Address was changed manually
+
+Steps for the student:
+- If you have recently changed the IP Address, make no further changes.
+- Take a screenshot of the network settings.
+- Confirm with the Technician whether DHCP or a Static IP applies to your connection.
+- Only after it is confirmed that the connection is DHCP, set the IPv4 settings to "Obtain an IP address automatically" and "Obtain DNS server address automatically".
+- If the connection uses a Static IP, take the Technician's help.
+
+Technician's check: Verify IP conflict, subnet mask, gateway, DNS and VLAN.

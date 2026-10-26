@@ -2,6 +2,7 @@
 
 Specification Sections 4, 5.4, 6, 8.3.
 Uses LLMRouter multi-provider fallback orchestrator.
+Lazy chat creation logic ensures chat documents are only created in MongoDB upon the first message.
 """
 
 import os
@@ -45,22 +46,35 @@ async def find_chat_in_db(chat_id: str):
 async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[str, Any], int]:
     """Processes a student message turn using LLMRouter multi-provider fallback.
 
-    1. Checks 10-message limit.
-    2. Runs Guard step via LLMRouter. Refusal returned if off-topic.
-    3. Performs RAG retrieval from ChromaDB.
-    4. Calls LLMRouter with prompt + context + history.
-    5. Updates MongoDB chat document.
+    Lazy Creation Logic:
+    - Validate chat_id format (must be valid ObjectId).
+    - If the message is rejected before being accepted (empty text, too long), store nothing.
+    - Check message limit (MAX_CHAT_MESSAGES).
+    - Perform guard/classification & RAG generation.
+    - Upsert chat document atomically using $setOnInsert for creation fields and $push for turns,
+      ensuring two rapid initial messages cannot create duplicate records.
 
     Returns:
         Tuple of (response_dict, http_status_code)
     """
+    # Validate chat_id format
+    try:
+        obj_id = ObjectId(chat_id)
+    except Exception:
+        return {"error": {"code": "INVALID_ID", "message": "Invalid chat session ID format"}}, 400
+
+    # Reject empty or overly long messages before storing anything
+    user_content_clean = user_content.strip()
+    if not user_content_clean:
+        return {"error": {"code": "EMPTY_MESSAGE", "message": "Message content cannot be empty"}}, 400
+    if len(user_content_clean) > 500:
+        return {"error": {"code": "MESSAGE_TOO_LONG", "message": "Message exceeds 500 character limit"}}, 400
+
     db = get_database()
     chat = await find_chat_in_db(chat_id)
-    if not chat:
-        return {"error": {"code": "NOT_FOUND", "message": "Chat session not found"}}, 404
 
-    # Enforce 10 user message limit (Section 5.4 & 6.2)
-    current_count = chat.get("message_count", 0)
+    # Check 10 user message limit (Section 5.4 & 6.2)
+    current_count = chat.get("message_count", 0) if chat else 0
     if current_count >= settings.MAX_CHAT_MESSAGES:
         return {
             "error": {
@@ -70,7 +84,7 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
         }, 429
 
     # Step 1: Guard & Classify via LLMRouter fallback orchestrator
-    guard_result = await llm_router.guard_and_classify(user_content)
+    guard_result = await llm_router.guard_and_classify(user_content_clean)
     is_on_topic = guard_result.get("on_topic", True)
     category_str = guard_result.get("category")
 
@@ -78,18 +92,22 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
     if category_str and category_str in [pt.value for pt in ProblemType]:
         detected_category = ProblemType(category_str)
     else:
-        detected_category = map_symptom_to_category(user_content)
+        detected_category = map_symptom_to_category(user_content_clean)
 
     new_count = current_count + 1
+    now_dt = datetime.utcnow()
 
-    # Record user message
+    # Record user message turn
     user_turn = {
         "role": "user",
-        "content": user_content,
-        "created_at": datetime.utcnow(),
+        "content": user_content_clean,
+        "created_at": now_dt,
         "is_off_topic": not is_on_topic,
         "source_doc_ids": []
     }
+
+    # Prepare document update fields
+    mongo_id = chat["_id"] if chat else obj_id
 
     if not is_on_topic:
         # Fixed refusal reply
@@ -101,15 +119,24 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
             "source_doc_ids": []
         }
 
+        # Lazy creation via atomic upsert
         await db.chats.update_one(
-            {"_id": chat["_id"]},
+            {"_id": mongo_id},
             {
+                "$setOnInsert": {
+                    "created_at": now_dt,
+                    "status": "UNASSIGNED",
+                    "reference_category_slug": None,
+                    "moved_at": None,
+                },
                 "$set": {
                     "message_count": new_count,
-                    "updated_at": datetime.utcnow()
+                    "updated_at": datetime.utcnow(),
+                    "detected_category": detected_category.value if detected_category else None
                 },
                 "$push": {"messages": {"$each": [user_turn, bot_turn]}}
-            }
+            },
+            upsert=True
         )
 
         return {
@@ -121,8 +148,8 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
         }, 200
 
     # Step 2: On-topic -> RAG Retrieval & Answering
-    category_slug = chat.get("reference_category_slug")
-    retrieved_chunks = retrieve_context(query=user_content, category_slug=category_slug, top_k=6)
+    category_slug = chat.get("reference_category_slug") if chat else None
+    retrieved_chunks = retrieve_context(query=user_content_clean, category_slug=category_slug, top_k=6)
 
     context_str = ""
     source_doc_ids = []
@@ -142,12 +169,13 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
 
     # Build history turns
     history = []
-    for msg in chat.get("messages", [])[-6:]:  # recent 3 turns
-        history.append({"role": msg["role"], "content": msg["content"]})
+    if chat:
+        for msg in chat.get("messages", [])[-6:]:  # recent 3 turns
+            history.append({"role": msg["role"], "content": msg["content"]})
 
     reply_text = await llm_router.generate_answer(
         system_prompt=system_prompt,
-        user_message=user_content,
+        user_message=user_content_clean,
         history=history
     )
 
@@ -159,7 +187,6 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
         "source_doc_ids": source_doc_ids
     }
 
-    # Update chat document with detected category if available
     update_fields = {
         "message_count": new_count,
         "updated_at": datetime.utcnow()
@@ -167,12 +194,20 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
     if detected_category:
         update_fields["detected_category"] = detected_category.value
 
+    # Lazy creation via atomic upsert
     await db.chats.update_one(
-        {"_id": chat["_id"]},
+        {"_id": mongo_id},
         {
+            "$setOnInsert": {
+                "created_at": now_dt,
+                "status": "UNASSIGNED",
+                "reference_category_slug": None,
+                "moved_at": None,
+            },
             "$set": update_fields,
             "$push": {"messages": {"$each": [user_turn, bot_turn]}}
-        }
+        },
+        upsert=True
     )
 
     return {
@@ -186,9 +221,15 @@ async def process_chat_message(chat_id: str, user_content: str) -> Tuple[Dict[st
 
 async def summarize_chat_transcript(chat_id: str) -> Tuple[Dict[str, Any], int]:
     """Generates problem type and comment summary from transcript via LLMRouter for auto-filling complaint form."""
+    # Validate ObjectId
+    try:
+        ObjectId(chat_id)
+    except Exception:
+        return {"error": {"code": "INVALID_ID", "message": "Invalid chat session ID format"}}, 400
+
     chat = await find_chat_in_db(chat_id)
     if not chat:
-        return {"error": {"code": "NOT_FOUND", "message": "Chat session not found"}}, 404
+        return {"error": {"code": "NO_MESSAGES", "message": "At least one user message is required to summarize."}}, 400
 
     messages = chat.get("messages", [])
     user_messages = [m for m in messages if m.get("role") == "user"]

@@ -3,6 +3,7 @@
 Specification Section 9.2, 9.3, 10.
 Allows admin to review chats, move unassigned chats to reference categories (triggering RAG indexing),
 unassign reference chats, and perform bulk moves.
+Excludes empty chats (message_count < 1) from admin listings and counts.
 """
 
 from datetime import datetime
@@ -27,11 +28,15 @@ router = APIRouter(prefix="/admin", tags=["admin-chats"])
 
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(admin_username: str = Depends(require_admin)):
-    """Returns aggregated stats for dashboard header cards."""
+    """Returns aggregated stats for dashboard header cards (excluding empty chats with message_count < 1)."""
     db = get_database()
-    unassigned_count = await db.chats.count_documents({"status": "UNASSIGNED"})
+    # Safety net: Exclude empty chats with message_count < 1
+    unassigned_count = await db.chats.count_documents({
+        "status": "UNASSIGNED",
+        "message_count": {"$gte": 1}
+    })
     documents_count = await db.documents.count_documents({})
-    total_chats_count = await db.chats.count_documents({})
+    total_chats_count = await db.chats.count_documents({"message_count": {"$gte": 1}})
 
     start_of_today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     complaints_today_count = await db.complaints.count_documents({"created_at": {"$gte": start_of_today}})
@@ -53,9 +58,10 @@ async def list_unassigned_chats(
     limit: int = Query(20, ge=1, le=100),
     admin_username: str = Depends(require_admin)
 ):
-    """Lists student chats with optional filtering and pagination."""
+    """Lists student chats with optional filtering and pagination (excluding empty chats)."""
     db = get_database()
-    query = {}
+    # Safety net: Only include chats with at least 1 user message
+    query = {"message_count": {"$gte": 1}}
     if status_filter:
         query["status"] = status_filter
     if category:

@@ -1,0 +1,17 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: LAN cable connected but Ethernet not working
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: The LAN cable is plugged in, but Ethernet is not working
+
+Steps for the student:
+- Plug the LAN cable properly into the laptop and the wall socket.
+- Look at the cable/network status in the Ethernet icon.
+- If possible, test with another good LAN cable.
+- Run ipconfig in CMD and look at the IPv4 Address of the Ethernet adapter.
+- If it shows "Network cable unplugged" or no IP is obtained, send a screenshot.
+Please do not open the wiring of the wall socket or the switch yourself.
+
+Technician's check: Check the switch port link, VLAN assignment, port security, DHCP and the cable/socket.

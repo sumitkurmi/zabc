@@ -713,7 +713,7 @@ export const ComplaintForm: React.FC<ComplaintFormProps> = ({
     name: '',
     email: '',
     mobile: '',
-    location: locations[0]?.id || 'hostel_a',
+    location: locations[0]?.id || 'sv_patel',
     address_room: '',
     preferred_from: '09:00',
     preferred_to: '17:00',

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAdminStats, adminLogout } from '../../api/admin';
 import { AdminStatsResponse } from '../../types';
-import { MessageSquare, BookOpen, LogOut, FileText, Activity } from 'lucide-react';
+import { MessageSquare, BookOpen, LogOut, FileText, Activity, Server } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
@@ -55,8 +55,8 @@ export const Dashboard: React.FC = () => {
           <p className="text-xs text-slate-500 mt-1">Review student chats, promote useful transcripts, and upload knowledge docs.</p>
         </div>
 
-        {/* Two Large Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Three Large Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card 1: See All Chats */}
           <Link
             to="/admin/chats"
@@ -102,6 +102,30 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="mt-6 text-xs font-semibold text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
               <span>View reference categories</span> &rarr;
+            </div>
+          </Link>
+
+          {/* Card 3: Network Assets and Stock */}
+          <Link
+            to="/admin/network-assets"
+            className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 hover:shadow-xl hover:border-indigo-300 transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Server className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl uppercase tracking-wider">
+                  Assets & Stock
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-1">Network Assets and Stock</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Manage hardware lifecycle (switches, routers, APs), campus location hierarchy, port mapping, and bulk stock inventory.
+              </p>
+            </div>
+            <div className="mt-6 text-xs font-semibold text-indigo-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              <span>Open asset manager</span> &rarr;
             </div>
           </Link>
         </div>

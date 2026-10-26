@@ -18,7 +18,12 @@ export async function adminLogin(username: string, password: string): Promise<Ad
   return res;
 }
 
-export function adminLogout(): void {
+export async function adminLogout(): Promise<void> {
+  try {
+    await fetchApi('/admin/logout', { method: 'POST' });
+  } catch (e) {
+    // Ignore error
+  }
   sessionStorage.removeItem('admin_token');
 }
 
@@ -69,6 +74,7 @@ export async function getCategoryDetail(slug: string): Promise<CategoryDetailRes
   return fetchApi<CategoryDetailResponse>(`/admin/categories/${slug}`);
 }
 
+
 export async function uploadDocument(slug: string, file: File): Promise<DocumentResponse> {
   const token = sessionStorage.getItem('admin_token');
   const formData = new FormData();
@@ -89,6 +95,60 @@ export async function uploadDocument(slug: string, file: File): Promise<Document
 
   return res.json();
 }
+
+
+
+export async function previewDocument(
+  docId: string
+): Promise<{ content: string; type: 'pdf' | 'docx' | 'text' }> {
+  const token = sessionStorage.getItem('admin_token');
+
+  const response = await fetch(`/api/admin/documents/${docId}/preview`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    sessionStorage.removeItem('admin_token');
+    window.location.href = '/admin/login';
+    throw new Error('Unauthorized access. Redirecting to login.');
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to preview document');
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/pdf')) {
+    const blob = await response.blob();
+    return {
+      content: URL.createObjectURL(blob),
+      type: 'pdf',
+    };
+  }
+
+  if (
+    contentType.includes(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+  ) {
+    const blob = await response.blob();
+    return {
+      content: URL.createObjectURL(blob),
+      type: 'docx',
+    };
+  }
+
+  return {
+    content: await response.text(),
+    type: 'text',
+  };
+}
+
+
 
 export async function deleteDocument(docId: string): Promise<{ message: string }> {
   return fetchApi<{ message: string }>(`/admin/documents/${docId}`, {

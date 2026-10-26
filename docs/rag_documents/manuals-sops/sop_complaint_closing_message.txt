@@ -1,0 +1,9 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: SMS the Technician sends to the student to close a complaint, and the practical suggestion for using SMS templates
+
+SMS to close the complaint:
+Troubleshooting has been done on your MNNIT Internet complaint. Please now connect to Wi-Fi/LAN again, check the internet once more and confirm whether the websites are opening. If the problem still persists, please reply to this same complaint. Thank you - Computer Centre, MNNIT Allahabad.
+
+Practical suggestion:
+These 22 SMS templates can be kept as a standard troubleshooting library for the Technicians of the Computer Centre. Each Technician should first get the student to do the simple checks, and then, as needed, send the complaint to the Network Team, the Proxy/Squid Team or the concerned Hostel network support. This can reduce repeated phone calls on the same problem and unnecessary onsite visits.

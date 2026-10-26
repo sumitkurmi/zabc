@@ -15,12 +15,15 @@ export const ResizeHandle: React.FC<DragHandleProps> = ({
     <div
       onMouseDown={onMouseDown}
       onDoubleClick={onDoubleClick}
-      title="Drag to resize, double-click to reset width"
-      className={`hidden md:flex w-2 bg-slate-200 hover:bg-blue-600 transition-colors cursor-col-resize items-center justify-center select-none ${
-        isResizing ? 'bg-blue-600' : ''
-      }`}
+      title="Drag to resize panel, double-click to reset width"
+      className={`hidden md:flex absolute left-0 top-0 bottom-0 w-2.5 z-20 hover:bg-transparent transition-colors cursor-col-resize items-center justify-center select-none group 
+      ${
+        isResizing ? 'bg-transparent' : 'bg-transparent'}
+        `}
     >
-      <div className="w-1 h-8 bg-slate-400 rounded-full" />
+      <div className={`w-0.5 h-12 rounded-full bg-slate-300 group-hover:bg-white transition-colors ${
+        isResizing ? 'bg-white' : ''
+      }`} />
     </div>
   );
 };

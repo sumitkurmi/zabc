@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ArrowLeft
 } from 'lucide-react';
+import { formatUTCToIST } from '../../utils/date';
 
 const CATEGORY_SLUGS = [
   { slug: 'complaint-logs', name: 'Complaint & Fault Logs' },
@@ -177,7 +178,7 @@ export const AllChats: React.FC = () => {
                         </span>
                       )}
                       <span className="text-[11px] text-slate-400">
-                        {new Date(chat.created_at).toLocaleString()}
+                        {formatUTCToIST(chat.created_at)}
                       </span>
                     </div>
 

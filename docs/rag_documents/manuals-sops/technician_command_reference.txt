@@ -1,0 +1,40 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: Additional troubleshooting commands for the Technician
+
+These commands help in understanding the student's problem and routing it to the right team. Send them only as needed.
+
+Windows CMD commands:
+
+1. IP configuration
+   Command: ipconfig /all
+   What it shows: IP, gateway, DHCP, DNS
+
+2. Gateway reachability
+   Command: ping <gateway-IP>
+   What it shows: An indication of local network connectivity
+
+3. DNS resolution
+   Command: nslookup google.com
+   What it shows: DNS resolution
+
+4. External IP reachability
+   Command: ping 8.8.8.8
+   What it shows: External connectivity, if ICMP is allowed
+
+5. Proxy configuration
+   Command: netsh winhttp show proxy
+   What it shows: The WinHTTP Proxy; it does not show all of Chrome's Proxy settings
+
+6. DNS cache clear
+   Command: ipconfig /flushdns
+   What it does: Clears the local DNS cache
+
+7. DHCP renewal
+   Command: ipconfig /renew
+   What it does: Attempts to take a new/renewed IP from DHCP
+
+To check the TCP Port of the Proxy, the Technician can give this command in Windows PowerShell:
+Test-NetConnection <PROXY-IP> -Port <SQUID-PORT>
+
+Here <PROXY-IP> and <SQUID-PORT> have to be replaced with the institute's actual Proxy IP and Port. TcpTestSucceeded : True means that a TCP connection could be made; this alone does not prove that Squid is serving browsing correctly.

@@ -1,13 +1,14 @@
 """Provider-specific LLM implementations and unified interface.
 
 Supports:
-- GeminiLLMClient (Google Gemini via REST API with GEMINI_API_KEY)
+- GeminiLLMClient (Google Gemini via REST API with GEMINI_API_KEY / GOOGLE_API_KEY)
 - OpenAILLMClient (OpenAI gpt-4o-mini via REST API with OPENAI_API_KEY)
 - GrokLLMClient (xAI Grok via REST API with GROK_API_KEY)
 - AnthropicLLMClient (Anthropic Claude via SDK/REST with LLM_API_KEY)
 - MockLLMClient (Offline local fallback)
 """
 
+import os
 import json
 import re
 from typing import Dict, Any, List, Optional
@@ -22,6 +23,7 @@ class LLMClient:
     """Interface for individual LLM client providers."""
 
     provider_name: str = "base"
+    model: str = "base"
 
     async def guard_and_classify(self, user_message: str) -> Dict[str, Any]:
         """Classifies message on-topic status and problem category."""
@@ -45,6 +47,7 @@ class MockLLMClient(LLMClient):
     """Fallback LLM client for local testing without requiring external API keys."""
 
     provider_name: str = "mock"
+    model: str = "mock-v1"
 
     async def guard_and_classify(self, user_message: str) -> Dict[str, Any]:
         text_lower = user_message.lower()
@@ -104,24 +107,69 @@ class MockLLMClient(LLMClient):
 
 
 class GeminiLLMClient(LLMClient):
-    """Google Gemini LLM client implementation."""
+    """Google Gemini LLM client implementation using direct REST calls matching test_gemini.py."""
 
     provider_name: str = "gemini"
 
     def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
-        self.api_key = api_key
-        self.model = model
+        # Fallback to GOOGLE_API_KEY environment variable if GEMINI_API_KEY is empty
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY", "")
+        # Clean model name ensuring no double 'models/' prefix
+        self.model = model.replace("models/", "") if model else "gemini-1.5-flash"
         self.url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
 
     async def _call_gemini(self, prompt: str) -> str:
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}]
+        headers = {
+            "x-goog-api-key": self.api_key,
+            "Content-Type": "application/json"
         }
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(self.url, json=payload)
-            resp.raise_for_status()
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": 1000
+            }
+        }
+        timeout = settings.GEMINI_TIMEOUT  # Default 60.0s configurable timeout
+
+        async with httpx.AsyncClient(timeout=timeout, trust_env=True) as client:
+            resp = await client.post(self.url, json=payload, headers=headers)
+            if resp.is_error:
+                err_body = resp.text[:500] if resp.text else "Empty error body"
+                raise RuntimeError(f"Gemini API returned HTTP {resp.status_code}: {err_body}")
+
             data = resp.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+            candidates = data.get("candidates", [])
+            if not candidates:
+                prompt_feedback = data.get("promptFeedback", {})
+                block_reason = prompt_feedback.get("blockReason", "No candidates returned")
+                raise RuntimeError(f"Gemini response blocked by promptFeedback: {block_reason}")
+
+            first = candidates[0]
+            finish_reason = first.get("finishReason", "UNKNOWN")
+            if finish_reason in ["SAFETY", "RECITATION", "OTHER", "BLOCKLIST"]:
+                raise RuntimeError(f"Gemini candidate generation blocked by finishReason: {finish_reason}")
+
+            parts = first.get("content", {}).get("parts", [])
+            if not parts or not parts[0].get("text"):
+                raise RuntimeError(f"Gemini returned empty text content (finishReason: {finish_reason})")
+
+            return parts[0]["text"].strip()
+
+    def _parse_json_response(self, text: str) -> Dict[str, Any]:
+        """Parses model response tolerantly stripping markdown code fences."""
+        cleaned = re.sub(r"```json\s*", "", text, flags=re.IGNORECASE)
+        cleaned = re.sub(r"```\s*", "", cleaned)
+        match = re.search(r"\{[\s\S]*\}", cleaned)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except Exception as e:
+                raise ValueError(f"Failed to parse JSON substring from text: {e}. Raw reply: {text[:200]}")
+        try:
+            return json.loads(cleaned.strip())
+        except Exception as e:
+            raise ValueError(f"Failed to parse JSON from Gemini response: {e}. Raw reply: {text[:200]}")
 
     async def guard_and_classify(self, user_message: str) -> Dict[str, Any]:
         prompt = f"""You are a guard classifier for MNNIT Allahabad Network Assistant.
@@ -137,10 +185,7 @@ Respond strictly with a JSON object:
 }}
 """
         text = await self._call_gemini(prompt)
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        return json.loads(text)
+        return self._parse_json_response(text)
 
     async def generate_answer(
         self,
@@ -165,10 +210,7 @@ JSON Format:
 }}
 """
         text = await self._call_gemini(prompt)
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        return json.loads(text)
+        return self._parse_json_response(text)
 
 
 class OpenAILLMClient(LLMClient):
@@ -244,7 +286,9 @@ class AnthropicLLMClient(LLMClient):
 
     provider_name: str = "anthropic"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        self.api_key = api_key
+        self.model = model
         self.client = anthropic.AsyncAnthropic(api_key=api_key)
 
     async def guard_and_classify(self, user_message: str) -> Dict[str, Any]:

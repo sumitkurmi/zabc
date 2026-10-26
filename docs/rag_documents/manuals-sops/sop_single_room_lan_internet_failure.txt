@@ -1,0 +1,45 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: Step-by-step procedure when the internet is not working in one student's room (LAN, Hostel Wing)
+(The first case heading was missing in the source notes; the title above is based on its content.)
+
+Step 1 - Ask the student
+"Is the internet working in the other rooms of your Wing? Is only the LAN in your room not working, or is Wi-Fi also not working?"
+
+If the internet of the other students is working and the problem is only in one room, first check the configuration of that student's laptop.
+
+Step 2 - Check the IP Address
+Please follow these steps:
+- On your laptop, press Windows + R.
+- Type cmd in the Run box and press Enter.
+- In CMD, type ipconfig and press Enter.
+- Under Ethernet Adapter, look at the IPv4 Address.
+- Match this IP with your Room-wise IP List. This list is available on the relevant MNNIT website.
+
+If the IP Address is not correct, send a screenshot of it. If the IP is correct, do the next step.
+
+Step 3 - If the IP is wrong, get the correct Static IP set
+If the IP Address in your laptop is wrong:
+- Press Windows + R.
+- Type ncpa.cpl and press Enter.
+- Right-click Ethernet and open Properties.
+- Double-click Internet Protocol Version 4 (TCP/IPv4).
+- Configure it according to the correct IP Address, Subnet Mask, Default Gateway and DNS settings given in the Room-wise IP List.
+- Click OK and then check the internet.
+
+If there is any doubt about the correct IP or the other settings, do not guess yourself; confirm with the Technician.
+
+Step 4 - Ping the gateway
+If the Static IP is correct, run this in CMD:
+ping 172.31.100.1
+- If a Reply is received, connectivity from the laptop to the Gateway is available. Now check the Proxy setting.
+- If Request timed out or Destination host unreachable appears, a check of the IP, subnet mask, cable or switch port may be necessary.
+
+Step 5 - Check the Proxy setting
+If the Gateway ping is successful, press Windows + R and open inetcpl.cpl. Go to Connections -> LAN settings and confirm the Proxy Server and Port prescribed by MNNIT.
+172.31.100.29, 172.31.100.25, 172.31.102.29, 172.31.100.27 port 3128
+
+Step 6 - Check the internet in the browser
+After correcting the Proxy setting, close Chrome, open it again and try a website.
+
+Technician's conclusion: If the IP is wrong, correct the IP configuration. If the Gateway ping is successful but browsing is not working, check the Proxy/Squid configuration.

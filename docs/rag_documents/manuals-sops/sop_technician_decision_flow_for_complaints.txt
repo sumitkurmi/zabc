@@ -1,0 +1,9 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: Easy decision method for the Technician when a student complaint is received
+
+1. The student's complaint is received.
+2. Ask: Is the problem also on other devices/rooms?
+3. If only one device is affected: check the IP, Wi-Fi, Proxy, Browser and Adapter.
+4. If many devices/rooms are affected: check the AP, Switch, OFC, DHCP, Proxy and upstream.
+5. Confirm that the problem is resolved and close the complaint.

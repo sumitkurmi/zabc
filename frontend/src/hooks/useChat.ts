@@ -15,11 +15,13 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState<boolean>(false);
 
-  // Initialize fresh chat session if none exists
+  // Initialize fresh chat session (clears any existing stored session key)
   const initChat = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+      // Explicitly clear old stored chat ID before creating a new session
+      sessionStorage.removeItem('student_chat_id');
       const res = await createChat();
       setChatId(res.chat_id);
       sessionStorage.setItem('student_chat_id', res.chat_id);

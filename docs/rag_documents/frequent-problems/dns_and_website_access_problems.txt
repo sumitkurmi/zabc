@@ -1,0 +1,62 @@
+MNNIT Network Support Knowledge Base
+Category: Frequently encountered network problems
+Topic: DNS errors and websites not opening (some or all websites, browser problems)
+Note: The student steps below can be sent to the student by SMS or WhatsApp.
+
+
+PROBLEM: IP is correct, gateway ping works and the Proxy is correct, but websites still do not open
+
+Steps for the technician:
+Step 1: Ask the student to run nslookup google.com.
+Step 2: Try opening another ordinary website.
+Step 3: Take a screenshot of the exact error shown in the browser.
+Step 4: The technician should check the Proxy server's access logs, DNS resolution and upstream connectivity.
+
+Message to send to the student:
+Your IP Address, Gateway and Proxy settings are correct. Now please:
+- Run nslookup google.com in CMD.
+- Send its full result.
+- Send a screenshot of the error that Chrome is showing.
+- Tell us whether all websites are down or only one website is not opening.
+After this, the problem can be checked at the right level.
+
+
+PROBLEM: Some websites open, but some do not
+
+Steps for the student:
+- Check the correct URL of the affected website.
+- Open the same website in another browser.
+- See whether other websites are working normally.
+- Take a screenshot of the error.
+- Send the name of the website, the time the problem started and your Hostel/Room Number.
+
+If only one website is affected, the problem may be related to that website, DNS, Proxy policy or a certificate.
+
+Technician's check: Check DNS resolution, Squid access logs, blocked categories, TLS/certificate errors and the availability of the external website.
+
+
+PROBLEM: DNS Error - the name of the website is not being resolved
+
+Steps for the student:
+- Open CMD.
+- Run nslookup google.com.
+- If the result shows a DNS timeout or resolution error, take a screenshot.
+- If the institute's policy allows it, run ipconfig /flushdns.
+- Then open the website in the browser and check.
+Please do not change the DNS Server IP yourself. If the problem remains, send the result to the Technician.
+
+Technician's check: Check the DNS servers received by the client, campus DNS reachability, forwarders and the DNS service.
+
+
+PROBLEM: The browser is not working or there is a problem in Chrome
+
+Steps for the student:
+- Close Chrome completely and open it again.
+- Open the same website in another browser.
+- Update Chrome, if an update is available.
+- Only if needed, temporarily turn off browser extensions and check.
+- Confirm the Proxy setting.
+- If the problem continues, send a screenshot.
+Before resetting Chrome, take care of your settings and saved data.
+
+Technician's check: Check browser-specific Proxy, extensions, certificate warnings, DNS and endpoint security restrictions.

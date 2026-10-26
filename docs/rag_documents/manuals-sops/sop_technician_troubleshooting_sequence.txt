@@ -1,0 +1,12 @@
+MNNIT Network Support Knowledge Base
+Category: Device manuals and standard operating procedures
+Topic: The most useful troubleshooting sequence for the Technician (a single affected student)
+
+1. Is the internet working in the whole Wing?
+2. Only one student is affected.
+3. Run ipconfig -> verify the Room-wise Static IP.
+4. Wrong IP? -> Correct the IP configuration through ncpa.cpl.
+5. Run ping 172.31.100.1
+6. If the ping fails: check the cable, subnet, VLAN, switch port and IP conflict.
+7. If the ping gets a reply: open inetcpl.cpl -> verify the Proxy IP/Port.
+8. Browser test -> DNS/Proxy logs -> confirm the solution.

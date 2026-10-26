@@ -1,0 +1,18 @@
+MNNIT Network Support Knowledge Base
+Category: Network administrator observations
+Topic: Important technical points about the Gateway, Static IP and Proxy configuration
+
+1. Gateway address
+Treat 172.31.100.1 as the Gateway only if it is the Gateway prescribed for the Hostel VLAN concerned. If different VLANs or subnets have different Gateways, check according to the approved IP list of that room.
+
+2. Static IP
+Before setting a Static IP, it is necessary to confirm the current IP list, subnet mask, gateway and DNS. A student must not be given a different IP on one's own, and must not try IPs by guesswork.
+
+3. Proxy IP and Port
+The actual MNNIT Proxy IP, Squid Port, VLAN and IP Address information should be verified from the IT policy in force at that time, or from the Technician. Students must not enter any IP or Port by guesswork. Proxy IP and Port values must not be assumed; only the institute's current configuration is valid. The Proxy listed in an example is to be entered only if it is the one currently prescribed for that student's network.
+
+4. Proxy and PAC
+If Automatic configuration/PAC is used, it must not be turned off without confirmation. Students should not try to switch off or bypass the Proxy.
+
+5. Unauthorised devices
+Starting a new DHCP Server or a separate Wi-Fi router without permission is not allowed. Installing an unauthorised router in the campus network can affect other users.

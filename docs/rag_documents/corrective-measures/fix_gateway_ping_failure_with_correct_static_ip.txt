@@ -1,0 +1,26 @@
+MNNIT Network Support Knowledge Base
+Category: Approved corrective measures
+Topic: Gateway ping not working even after entering the correct Static IP
+
+Step 1 - Verify the IP details again
+Take a screenshot of ipconfig from the student and match it with the Room-wise IP List:
+- IPv4 Address
+- Subnet Mask
+- Default Gateway
+
+Step 2 - Check the LAN connection
+Ask the student to remove the LAN cable and plug it in again properly. If available, test with another good cable.
+
+Step 3 - Check for the possibility of an IP conflict
+If the correct IP is already being used on another device, an IP conflict can occur. Do not give the student any other IP on your own.
+
+Step 4 - Checks from the Technician's side
+Check the switch port status, the related VLAN, MAC address learning and port security. If needed, test with another verified port/cable.
+
+Message to send to the student:
+Your IP Address is correct, but the Gateway ping is still not working.
+- Please plug the LAN cable in again and check.
+- Run ipconfig in CMD and send a screenshot.
+- Tell us whether the light of the LAN port is on or not.
+- Send your Hostel, Room Number and the time the problem started.
+Please do not test by changing the IP Address.

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getAdminChatDetail, moveChatToReference, unassignChatFromReference } from '../../api/admin';
 import { ChatTranscriptResponse } from '../../types';
 import { ArrowLeft, FolderInput, RotateCcw, User, Bot, AlertCircle } from 'lucide-react';
+import { MarkdownMessage } from '../../components/chat/MarkdownMessage';
 
 const CATEGORY_SLUGS = [
   { slug: 'complaint-logs', name: 'Complaint & Fault Logs' },
@@ -108,13 +109,17 @@ export const ChatDetail: React.FC = () => {
                     </div>
 
                     <div
-                      className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+                      className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed overflow-hidden ${
                         isUser
                           ? 'bg-blue-600 text-white rounded-tr-none'
                           : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {isUser ? (
+                        <div className="whitespace-pre-wrap text-xs">{msg.content}</div>
+                      ) : (
+                        <MarkdownMessage content={msg.content} />
+                      )}
                       {msg.is_off_topic && (
                         <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-600 font-medium">
                           <AlertCircle className="w-3 h-3" /> Off-topic query
