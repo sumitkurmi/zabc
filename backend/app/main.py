@@ -25,7 +25,8 @@ from backend.app.routers import (
     public_chat,
     admin_auth,
     admin_chats,
-    admin_reference
+    admin_reference,
+    network_config,
 )
 from backend.app.network_assets.router import router as network_assets_router
 
@@ -108,6 +109,7 @@ app.include_router(public_chat.router, prefix="/api")
 app.include_router(admin_auth.router, prefix="/api")
 app.include_router(admin_chats.router, prefix="/api")
 app.include_router(admin_reference.router, prefix="/api")
+app.include_router(network_config.router, prefix="/api")
 app.include_router(network_assets_router, prefix="/api")
 
 
