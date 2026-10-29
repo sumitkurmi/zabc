@@ -31,6 +31,7 @@ class ConfigResponse(BaseModel):
     problem_types: List[ProblemTypeOption]
     max_chat_messages: int
     max_upload_mb: int
+    allowed_email_domain: str = "mnnit.ac.in"
 
 
 # --- Student Complaint Schemas ---
