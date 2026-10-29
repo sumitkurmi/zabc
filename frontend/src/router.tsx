@@ -1,16 +1,28 @@
+// MODULE: Complaint Management (Part 2) - this file belongs to the code for this module.
+// Application router configuration wiring public student pages, staff authentication, role guards, and dashboards.
+
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { Home } from './pages/Home';
 import { Success } from './pages/Success';
-import { Login } from './pages/admin/Login';
-import { Dashboard } from './pages/admin/Dashboard';
+import { Login as StaffLogin } from './pages/public/Login';
+import { ConfirmComplaint } from './pages/public/ConfirmComplaint';
+import { RateComplaint } from './pages/public/RateComplaint';
+
+import { ManagerDashboard } from './pages/staff/ManagerDashboard';
+import { TechnicianDashboard } from './pages/staff/TechnicianDashboard';
+import { StaffManagement } from './pages/staff/StaffManagement';
+import { JunkComplaints } from './pages/staff/JunkComplaints';
+import { AdminSettings } from './pages/staff/AdminSettings';
+
+import { Dashboard as AdminDashboard } from './pages/admin/Dashboard';
 import { AllChats } from './pages/admin/AllChats';
 import { ChatDetail } from './pages/admin/ChatDetail';
 import { ReferenceHome } from './pages/admin/ReferenceHome';
 import { CategoryPage } from './pages/admin/CategoryPage';
-import { ProtectedRoute } from './components/admin/ProtectedRoute';
+import { RequireRole } from './components/RequireRole';
 
 import { Overview } from './pages/admin/network-assets/Overview';
 import { AssetList } from './pages/admin/network-assets/AssetList';
@@ -30,112 +42,54 @@ const queryClient = new QueryClient({
 });
 
 const router = createBrowserRouter([
+  // Public Student Pages
   { path: '/', element: <Home /> },
   { path: '/success/:complaintId', element: <Success /> },
-  { path: '/admin/login', element: <Login /> },
+  { path: '/confirm/:token', element: <ConfirmComplaint /> },
+  { path: '/rate/:token', element: <RateComplaint /> },
+  { path: '/login', element: <StaffLogin /> },
+  { path: '/admin/login', element: <Navigate to="/login" replace /> },
+
+  // Admin Workspace
   {
-    path: '/admin',
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
+    element: <RequireRole allowedRoles={['ADMIN']} />,
+    children: [
+      { path: '/admin', element: <AdminDashboard /> },
+      { path: '/admin/staff', element: <StaffManagement /> },
+      { path: '/admin/junk', element: <JunkComplaints /> },
+      { path: '/admin/settings', element: <AdminSettings /> },
+      { path: '/admin/chats', element: <AllChats /> },
+      { path: '/admin/chats/:id', element: <ChatDetail /> },
+      { path: '/admin/reference', element: <ReferenceHome /> },
+      { path: '/admin/reference/:categoryId', element: <CategoryPage /> },
+    ],
   },
+
+  // Manager Workspace (Admin + Manager)
   {
-    path: '/admin/network-assets',
-    element: (
-      <ProtectedRoute>
-        <Overview />
-      </ProtectedRoute>
-    ),
+    element: <RequireRole allowedRoles={['ADMIN', 'MANAGER']} />,
+    children: [{ path: '/manager', element: <ManagerDashboard /> }],
   },
+
+  // Technician Workspace (Technician)
   {
-    path: '/admin/network-assets/list',
-    element: (
-      <ProtectedRoute>
-        <AssetList />
-      </ProtectedRoute>
-    ),
+    element: <RequireRole allowedRoles={['TECHNICIAN']} />,
+    children: [{ path: '/technician', element: <TechnicianDashboard /> }],
   },
+
+  // Shared Read-Only / Write Network Assets
   {
-    path: '/admin/network-assets/new',
-    element: (
-      <ProtectedRoute>
-        <AssetForm />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/network-assets/:id/edit',
-    element: (
-      <ProtectedRoute>
-        <AssetForm />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/network-assets/:id',
-    element: (
-      <ProtectedRoute>
-        <AssetDetail />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/network-assets/locations',
-    element: (
-      <ProtectedRoute>
-        <Locations />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/network-assets/switches/:id/ports',
-    element: (
-      <ProtectedRoute>
-        <SwitchPorts />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/network-assets/stock',
-    element: (
-      <ProtectedRoute>
-        <Stock />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/chats',
-    element: (
-      <ProtectedRoute>
-        <AllChats />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/chats/:id',
-    element: (
-      <ProtectedRoute>
-        <ChatDetail />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/reference',
-    element: (
-      <ProtectedRoute>
-        <ReferenceHome />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/reference/:categoryId',
-    element: (
-      <ProtectedRoute>
-        <CategoryPage />
-      </ProtectedRoute>
-    ),
+    element: <RequireRole allowedRoles={['ADMIN', 'MANAGER', 'TECHNICIAN']} />,
+    children: [
+      { path: '/admin/network-assets', element: <Overview /> },
+      { path: '/admin/network-assets/list', element: <AssetList /> },
+      { path: '/admin/network-assets/new', element: <AssetForm /> },
+      { path: '/admin/network-assets/:id/edit', element: <AssetForm /> },
+      { path: '/admin/network-assets/:id', element: <AssetDetail /> },
+      { path: '/admin/network-assets/locations', element: <Locations /> },
+      { path: '/admin/network-assets/switches/:id/ports', element: <SwitchPorts /> },
+      { path: '/admin/network-assets/stock', element: <Stock /> },
+    ],
   },
 ]);
 
