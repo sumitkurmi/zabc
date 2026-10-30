@@ -222,18 +222,11 @@ async def verify_otp(data: OTPVerifyPayload):
         "updated_at": now_dt
     }
 
-    # Delete pending request and insert complaint
+    # Delete pending request and insert complaint as SUBMITTED
     await db.pending_complaints.delete_one({"_id": pending_doc["_id"]})
     await db.complaints.insert_one(complaint_doc)
 
-    # Transition to CLASSIFIED
     actor = {"type": "SYSTEM", "id": "system_registration", "role": "SYSTEM", "name": "Registration Engine"}
-    await StatusService.change_status(
-        ticket_id=ticket_id,
-        to_status=ComplaintStatus.CLASSIFIED.value,
-        actor=actor,
-        note="Problem type chosen by student kept as category"
-    )
 
     # Emit complaint_registered event
     await events.emit("complaint_registered", {
@@ -241,6 +234,10 @@ async def verify_otp(data: OTPVerifyPayload):
         "complaint": complaint_doc,
         "actor": actor
     })
+
+    # Delegate classification & advancement to classification_service
+    from backend.app.complaint_management.services.classification_service import classify_and_advance
+    await classify_and_advance(ticket_id)
 
     return OTPVerifyResponse(
         ticket_id=ticket_id,

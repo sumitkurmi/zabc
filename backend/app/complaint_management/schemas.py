@@ -198,6 +198,13 @@ class ComplaintDetailResponse(BaseModel):
     confirmation_requested_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     closed_by: Optional[str] = None
+    priority: Optional[str] = "MEDIUM"
+    ai_category: Optional[str] = None
+    ai_confidence: Optional[float] = None
+    affected_users_count: Optional[int] = 1
+    agent_suggestion: Optional[Dict[str, Any]] = None
+    agent_analysis: Optional[Dict[str, Any]] = None
+    agent_status: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     history: List[HistoryItemResponse] = []

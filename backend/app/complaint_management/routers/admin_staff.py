@@ -296,3 +296,24 @@ async def update_admin_settings(payload: dict, admin_user: dict = Depends(requir
     )
 
     return {"message": "Admin settings updated successfully", "notify_on_new_complaint": notify_flag}
+
+
+@router.get("/agent/status")
+async def get_admin_agent_status(admin_user: dict = Depends(require_roles("ADMIN", "MANAGER"))):
+    """Returns agent configuration status, pending/failed job counts, and last successful run timestamp."""
+    db = get_database()
+    from backend.app.config import settings
+
+    pending_jobs = await db.agent_jobs.count_documents({"status": "PENDING"})
+    failed_jobs = await db.agent_jobs.count_documents({"status": "FAILED"})
+
+    last_run = await db.agent_runs.find_one({"success": True}, sort=[("started_at", -1)])
+    last_run_at = last_run.get("started_at") if last_run else None
+
+    return {
+        "enabled": getattr(settings, "AGENT_ENABLED", True),
+        "mode": getattr(settings, "AGENT_ASSIGNMENT_MODE", "auto"),
+        "pending_jobs": pending_jobs,
+        "failed_jobs": failed_jobs,
+        "last_successful_run": last_run_at
+    }

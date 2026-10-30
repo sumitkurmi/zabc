@@ -43,6 +43,7 @@ class DocumentSourceType(str, Enum):
     """Source of a curated knowledge document."""
     UPLOAD = "UPLOAD"
     CHAT = "CHAT"
+    COMPLAINT = "COMPLAINT"
 
 
 class DocumentStatus(str, Enum):

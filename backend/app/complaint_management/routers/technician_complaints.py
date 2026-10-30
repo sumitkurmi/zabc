@@ -24,11 +24,12 @@ router = APIRouter(prefix="/technician", tags=["technician-complaints"])
 @router.get("/complaints")
 async def list_technician_complaints(
     tab: str = Query("open", regex="^(open|closed)$"),
+    priority_filter: Optional[str] = Query(None, alias="priority"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     staff_user: dict = Depends(require_roles("TECHNICIAN"))
 ):
-    """Lists complaints assigned strictly to the logged-in technician."""
+    """Lists complaints assigned strictly to the logged-in technician, sorted by priority then age."""
     db = get_database()
     tech_id = str(staff_user["_id"])
 
@@ -38,12 +39,28 @@ async def list_technician_complaints(
     else:  # 'closed'
         query["status"] = ComplaintStatus.CLOSED.value
 
-    skip = (page - 1) * limit
+    if priority_filter:
+        query["priority"] = priority_filter.upper()
+
     total = await db.complaints.count_documents(query)
-    cursor = db.complaints.find(query).sort("created_at", -1).skip(skip).limit(limit)
+    cursor = db.complaints.find(query)
+    all_docs = [doc async for doc in cursor]
+
+    # Sort open complaints by priority (CRITICAL first) then created_at ascending (oldest first)
+    priority_rank = {"CRITICAL": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4}
+
+    if tab == "open":
+        all_docs.sort(key=lambda d: (priority_rank.get(d.get("priority", "MEDIUM").upper(), 3), d.get("created_at") or datetime.max))
+    else:
+        all_docs.sort(key=lambda d: d.get("created_at") or datetime.min, reverse=True)
+
+    skip = (page - 1) * limit
+    paged_docs = all_docs[skip:skip + limit]
+
+    from backend.app.complaint_management.routers.manager_complaints import _build_agent_analysis_data
 
     complaints_list = []
-    async for c in cursor:
+    for c in paged_docs:
         hist_cursor = db.complaint_history.find({"ticket_id": c["ticket_id"]}).sort("at", 1)
         history_items = [
             HistoryItemResponse(
@@ -59,6 +76,7 @@ async def list_technician_complaints(
         ]
 
         rating_info = await db.ratings.find_one({"ticket_id": c["ticket_id"]})
+        agent_analysis = await _build_agent_analysis_data(c, is_manager_or_admin=False)
 
         complaints_list.append(
             ComplaintDetailResponse(
@@ -90,6 +108,13 @@ async def list_technician_complaints(
                 confirmation_requested_at=c.get("confirmation_requested_at"),
                 closed_at=c.get("closed_at"),
                 closed_by=c.get("closed_by"),
+                priority=c.get("priority", "MEDIUM"),
+                ai_category=c.get("ai_category"),
+                ai_confidence=c.get("ai_confidence"),
+                affected_users_count=c.get("affected_users_count", 1),
+                agent_suggestion=c.get("agent_suggestion"),
+                agent_analysis=agent_analysis,
+                agent_status=c.get("agent_status"),
                 created_at=c["created_at"],
                 updated_at=c.get("updated_at", c["created_at"]),
                 history=history_items,
@@ -131,6 +156,8 @@ async def get_technician_complaint_detail(ticket_id: str, staff_user: dict = Dep
     ]
 
     rating_info = await db.ratings.find_one({"ticket_id": ticket_id})
+    from backend.app.complaint_management.routers.manager_complaints import _build_agent_analysis_data
+    agent_analysis = await _build_agent_analysis_data(c, is_manager_or_admin=False)
 
     return ComplaintDetailResponse(
         _id=str(c["_id"]),
@@ -161,6 +188,13 @@ async def get_technician_complaint_detail(ticket_id: str, staff_user: dict = Dep
         confirmation_requested_at=c.get("confirmation_requested_at"),
         closed_at=c.get("closed_at"),
         closed_by=c.get("closed_by"),
+        priority=c.get("priority", "MEDIUM"),
+        ai_category=c.get("ai_category"),
+        ai_confidence=c.get("ai_confidence"),
+        affected_users_count=c.get("affected_users_count", 1),
+        agent_suggestion=c.get("agent_suggestion"),
+        agent_analysis=agent_analysis,
+        agent_status=c.get("agent_status"),
         created_at=c["created_at"],
         updated_at=c.get("updated_at", c["created_at"]),
         history=history_items,

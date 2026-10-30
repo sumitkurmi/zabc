@@ -47,9 +47,17 @@ class HistoryActorType(str, Enum):
     AGENT = "AGENT"
 
 
+class ComplaintPriority(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 class AssignmentMethod(str, Enum):
     MANUAL = "MANUAL"
     AUTO = "AUTO"
+    AUTO_CONFIRMED = "AUTO_CONFIRMED"
 
 
 class ActionTokenPurpose(str, Enum):

@@ -60,11 +60,15 @@ async def lifespan(app: FastAPI):
     register_notification_listeners()
 
     # Start background tasks
+    from backend.app.agentic.worker import agent_worker_loop, stop_agent_worker
     outbox_task = asyncio.create_task(email_outbox_worker_loop())
     autoclose_task = asyncio.create_task(auto_close_worker_loop())
+    agent_task = asyncio.create_task(agent_worker_loop())
 
     yield
 
+    stop_agent_worker()
+    agent_task.cancel()
     outbox_task.cancel()
     autoclose_task.cancel()
     close_db_client()

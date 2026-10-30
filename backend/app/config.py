@@ -64,6 +64,25 @@ class Settings(BaseSettings):
     SCORE_PRIOR_MEAN: float = 3.5
     SCORE_PRIOR_COUNT: float = 5.0
 
+    # Module 2 Agentic AI Settings
+    AGENT_ENABLED: bool = True
+    AGENT_ASSIGNMENT_MODE: str = "auto"  # auto | suggest | off
+    AGENT_USE_LLM: bool = True
+    AGENT_LLM_REASON: bool = True
+    AGENT_CATEGORY_MIN_CONFIDENCE: float = 0.75
+    AGENT_SIMILAR_WINDOW_HOURS: int = 6
+    AGENT_PREVIOUS_FAULT_DAYS: int = 90
+    AGENT_HIGH_IMPACT_USERS: int = 5
+    AGENT_CRITICAL_IMPACT_USERS: int = 20
+    AGENT_PRIORITY_LOCATIONS: str = ""
+    AGENT_STUCK_MINUTES: int = 10
+    AGENT_SWEEP_MINUTES: int = 5
+    AGENT_MAX_ATTEMPTS: int = 3
+    AGENT_ASSIGNMENT_WEIGHTS: str = ""  # optional JSON override
+    RAG_AUTO_INDEX_CLOSED: bool = True
+    RAG_INCLUDE_AUTO_CLOSED: bool = False
+    AGENT_USE_RAG_SIMILARITY: bool = False
+
     # Multi-Provider LLM Fallback Configuration
     LLM_PROVIDER_ORDER: str = "gemini,openai,grok,anthropic,mock"
 
