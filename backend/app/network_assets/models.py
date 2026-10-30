@@ -40,13 +40,7 @@ class LocationType(str, Enum):
 
 
 class Warranty:
-    """Value object representing asset warranty metadata.
-
-    Attributes:
-        start_date: Warranty start date string (YYYY-MM-DD) or datetime.
-        end_date: Warranty expiration date string (YYYY-MM-DD) or datetime.
-        vendor: Warranty vendor or provider name.
-    """
+    """Value object representing asset warranty metadata."""
 
     def __init__(
         self,
@@ -59,11 +53,6 @@ class Warranty:
         self.vendor = vendor
 
     def is_active(self) -> bool:
-        """Checks if warranty is active as of today.
-
-        Returns:
-            True if current date is before end_date, False otherwise.
-        """
         if not self.end_date:
             return False
         try:
@@ -73,7 +62,6 @@ class Warranty:
             return False
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes warranty object to dictionary."""
         return {
             "start_date": self.start_date,
             "end_date": self.end_date,
@@ -83,15 +71,7 @@ class Warranty:
 
 
 class MaintenanceRecord:
-    """Value object representing a maintenance or repair event.
-
-    Attributes:
-        date: Date string or ISO timestamp of maintenance.
-        type: Maintenance type (REPAIR | SERVICE | REPLACEMENT | INSPECTION).
-        description: Summary of work performed.
-        performed_by: Person or technician who performed maintenance.
-        cost: Optional monetary cost of maintenance.
-    """
+    """Value object representing a maintenance or repair event."""
 
     def __init__(
         self,
@@ -99,22 +79,24 @@ class MaintenanceRecord:
         type: str,
         description: str,
         performed_by: str,
-        cost: Optional[float] = None
+        cost: Optional[float] = None,
+        complaint_id: Optional[str] = None
     ):
         self.date = date
         self.type = type
         self.description = description
         self.performed_by = performed_by
         self.cost = cost
+        self.complaint_id = complaint_id
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes maintenance record to dictionary."""
         return {
             "date": self.date,
             "type": self.type,
             "description": self.description,
             "performed_by": self.performed_by,
-            "cost": self.cost
+            "cost": self.cost,
+            "complaint_id": self.complaint_id
         }
 
 
@@ -128,7 +110,6 @@ class StatusChangeRecord:
         self.reason = reason
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes status change record to dictionary."""
         return {
             "status": self.status,
             "changed_at": self.changed_at,
@@ -138,24 +119,7 @@ class StatusChangeRecord:
 
 
 class Asset(ABC):
-    """Abstract base class representing a physical or logical network asset.
-
-    Attributes:
-        id: Unique Mongo document ID string.
-        asset_tag: Human-readable asset tag.
-        category: AssetCategory enum value.
-        make: Manufacturer / Brand.
-        model: Model designation.
-        serial_number: Unique serial number.
-        location_id: Installed location ID.
-        installation_date: Date installed.
-        installed_by: Person who installed asset.
-        status: Current AssetStatus enum value.
-        warranty: Warranty value object.
-        maintenance_history: List of MaintenanceRecord objects.
-        status_history: List of StatusChangeRecord objects.
-        replaced_by_id: Optional ID of replacing asset.
-    """
+    """Abstract base class representing a physical or logical network asset."""
 
     def __init__(
         self,
@@ -190,19 +154,6 @@ class Asset(ABC):
         self.replaced_by_id = replaced_by_id
 
     def change_status(self, new_status: AssetStatus, by: str, reason: str) -> None:
-        """Transitions asset lifecycle status and records history entry.
-
-        Business Rule: FAULTY, REPLACED, RETIRED assets cannot be moved directly
-        to IN_USE without going through SPARE or UNDER_REPAIR first.
-
-        Args:
-            new_status: Target AssetStatus enum value.
-            by: User string changing status.
-            reason: Required justification.
-
-        Raises:
-            ValueError: If invalid status transition is attempted.
-        """
         if new_status == AssetStatus.IN_USE:
             if self.status in [AssetStatus.FAULTY, AssetStatus.REPLACED, AssetStatus.RETIRED]:
                 raise ValueError(
@@ -220,19 +171,15 @@ class Asset(ABC):
         ))
 
     def add_maintenance(self, record: MaintenanceRecord) -> None:
-        """Appends a maintenance event to history."""
         self.maintenance_history.append(record)
 
     def move_to(self, location_id: str) -> None:
-        """Updates asset installation location."""
         self.location_id = location_id
 
     def is_under_warranty(self) -> bool:
-        """Checks if asset is currently under warranty."""
         return self.warranty.is_active()
 
     def to_dict(self) -> Dict[str, Any]:
-        """Base dictionary representation."""
         data = {
             "asset_tag": self.asset_tag,
             "category": self.category.value if isinstance(self.category, AssetCategory) else self.category,
@@ -256,8 +203,6 @@ class Asset(ABC):
 # --- Device Abstract & Concrete Subclasses ---
 
 class NetworkDevice(Asset, ABC):
-    """Abstract class for active network devices with networking credentials."""
-
     def __init__(
         self,
         ip_address: Optional[str] = None,
@@ -281,8 +226,6 @@ class NetworkDevice(Asset, ABC):
 
 
 class Switch(NetworkDevice):
-    """Ethernet Switch asset with port count."""
-
     def __init__(self, total_ports: int = 24, **kwargs):
         kwargs["category"] = AssetCategory.SWITCH
         super().__init__(**kwargs)
@@ -295,16 +238,12 @@ class Switch(NetworkDevice):
 
 
 class Router(NetworkDevice):
-    """Core/Edge Router asset."""
-
     def __init__(self, **kwargs):
         kwargs["category"] = AssetCategory.ROUTER
         super().__init__(**kwargs)
 
 
 class AccessPoint(NetworkDevice):
-    """Wireless Access Point asset."""
-
     def __init__(
         self,
         ssid_list: Optional[List[str]] = None,
@@ -326,16 +265,12 @@ class AccessPoint(NetworkDevice):
 
 
 class Firewall(NetworkDevice):
-    """Network Firewall security appliance."""
-
     def __init__(self, **kwargs):
         kwargs["category"] = AssetCategory.FIREWALL
         super().__init__(**kwargs)
 
 
 class OpticalDevice(NetworkDevice):
-    """Optical Transmission device (ONT | OLT | MEDIA_CONVERTER)."""
-
     def __init__(self, device_type: str = "MEDIA_CONVERTER", **kwargs):
         kwargs["category"] = AssetCategory.OPTICAL_DEVICE
         super().__init__(**kwargs)
@@ -348,8 +283,6 @@ class OpticalDevice(NetworkDevice):
 
 
 class Cable(Asset):
-    """Network Cabling asset."""
-
     def __init__(self, cable_type: str = "LAN", length_m: float = 1.0, **kwargs):
         kwargs["category"] = AssetCategory.CABLE
         super().__init__(**kwargs)
@@ -366,13 +299,10 @@ class Cable(Asset):
 
 
 class Accessory(Asset, ABC):
-    """Abstract class for passive network accessories."""
     pass
 
 
 class SFPModule(Accessory):
-    """SFP/SFP+ Optical Transceiver."""
-
     def __init__(self, speed: str = "1Gbps", wavelength: str = "850nm", **kwargs):
         kwargs["category"] = AssetCategory.SFP_MODULE
         super().__init__(**kwargs)
@@ -386,8 +316,6 @@ class SFPModule(Accessory):
 
 
 class Rack(Accessory):
-    """Server or Network Equipment Rack."""
-
     def __init__(self, units: int = 42, **kwargs):
         kwargs["category"] = AssetCategory.RACK
         super().__init__(**kwargs)
@@ -400,8 +328,6 @@ class Rack(Accessory):
 
 
 class PatchPanel(Accessory):
-    """Patch Panel asset."""
-
     def __init__(self, port_count: int = 24, **kwargs):
         kwargs["category"] = AssetCategory.PATCH_PANEL
         super().__init__(**kwargs)
@@ -414,8 +340,6 @@ class PatchPanel(Accessory):
 
 
 class UPS(Accessory):
-    """Uninterruptible Power Supply."""
-
     def __init__(self, capacity_va: int = 1000, **kwargs):
         kwargs["category"] = AssetCategory.UPS
         super().__init__(**kwargs)
@@ -430,16 +354,6 @@ class UPS(Accessory):
 # --- Location, SwitchPort, and Stock Classes ---
 
 class Location:
-    """Represents a physical location in campus hierarchy.
-
-    Attributes:
-        id: Document ID.
-        name: Name (e.g., Room 214).
-        code: Unique location code.
-        type: LocationType enum value.
-        parent_id: Optional ID of parent location.
-    """
-
     def __init__(
         self,
         id: Optional[str],
@@ -467,8 +381,6 @@ class Location:
 
 
 class SwitchPort:
-    """Represents a physical switch port mapping."""
-
     def __init__(
         self,
         id: Optional[str],
@@ -508,18 +420,6 @@ class SwitchPort:
 
 
 class StockItem:
-    """Bulk stock item entity counted by quantity.
-
-    Attributes:
-        id: Document ID.
-        item_type: Category designation string.
-        make: Brand name.
-        model: Model designation.
-        quantity_available: Available inventory count.
-        minimum_level: Threshold triggering low stock alert.
-        store_location_id: Storage location ID.
-    """
-
     def __init__(
         self,
         id: Optional[str],
@@ -539,21 +439,6 @@ class StockItem:
         self.store_location_id = store_location_id
 
     def issue(self, qty: int, by: str, reason: str) -> int:
-        """Issues quantity out of inventory.
-
-        Business Rule: Stock quantity can never go below zero.
-
-        Args:
-            qty: Quantity to remove.
-            by: User issuing stock.
-            reason: Explanation.
-
-        Returns:
-            Updated quantity available.
-
-        Raises:
-            ValueError: If requested quantity exceeds available stock.
-        """
         if qty <= 0:
             raise ValueError("Issue quantity must be greater than zero.")
         if self.quantity_available < qty:
@@ -562,14 +447,12 @@ class StockItem:
         return self.quantity_available
 
     def restock(self, qty: int, by: str) -> int:
-        """Adds quantity into inventory."""
         if qty <= 0:
             raise ValueError("Restock quantity must be greater than zero.")
         self.quantity_available += qty
         return self.quantity_available
 
     def is_low(self) -> bool:
-        """Checks if available quantity is at or below minimum threshold."""
         return self.quantity_available <= self.minimum_level
 
     def to_dict(self) -> Dict[str, Any]:
@@ -588,7 +471,7 @@ class StockItem:
 
 
 class StockTransaction:
-    """Auditable log entry for stock movements."""
+    """Auditable log entry for stock movements with optional complaint tracking."""
 
     def __init__(
         self,
@@ -597,7 +480,10 @@ class StockTransaction:
         change: int,
         reason: str,
         by: str,
-        date: str
+        date: str,
+        complaint_id: Optional[str] = None,
+        used_by: Optional[str] = None,
+        location_id: Optional[str] = None
     ):
         self.id = id
         self.stock_item_id = stock_item_id
@@ -605,6 +491,9 @@ class StockTransaction:
         self.reason = reason
         self.by = by
         self.date = date
+        self.complaint_id = complaint_id
+        self.used_by = used_by
+        self.location_id = location_id
 
     def to_dict(self) -> Dict[str, Any]:
         data = {
@@ -612,7 +501,10 @@ class StockTransaction:
             "change": self.change,
             "reason": self.reason,
             "by": self.by,
-            "date": self.date
+            "date": self.date,
+            "complaint_id": self.complaint_id,
+            "used_by": self.used_by,
+            "location_id": self.location_id
         }
         if self.id:
             data["_id"] = self.id

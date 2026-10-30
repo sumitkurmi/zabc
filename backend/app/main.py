@@ -2,10 +2,11 @@
 
 Specification Section 3, 4, 10.
 Wires CORS, rate limiting using SlowAPI, database startup lifecycle, public and admin API routers,
-and static file serving for React frontend SPA build with server-side admin page auth protection.
+background worker tasks for email outbox and auto-close, and static file serving for React frontend SPA.
 """
 
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,23 +31,49 @@ from backend.app.routers import (
 )
 from backend.app.network_assets.router import router as network_assets_router
 
+# Part 2 Imports
+from backend.app.complaint_management.routers import (
+    public_otp,
+    student_actions,
+    manager_complaints,
+    leaderboard,
+    technician_complaints,
+    admin_staff,
+    admin_junk
+)
+from backend.app.auth import auth_router
+from backend.app.notifications.listeners import register_notification_listeners
+from backend.app.notifications.service import email_outbox_worker_loop
+from backend.app.complaint_management.services.auto_close_service import auto_close_worker_loop
+
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/hour"])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan context manager handling startup and shutdown events."""
+    """Application lifespan context manager handling startup, background loops, and shutdown events."""
     os.makedirs(settings.CHROMA_DIR, exist_ok=True)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
+    # Register event listeners
+    register_notification_listeners()
+
+    # Start background tasks
+    outbox_task = asyncio.create_task(email_outbox_worker_loop())
+    autoclose_task = asyncio.create_task(auto_close_worker_loop())
+
     yield
+
+    outbox_task.cancel()
+    autoclose_task.cancel()
     close_db_client()
 
 
 app = FastAPI(
     title=f"{settings.COLLEGE_NAME} AI Network Complaint Portal",
-    description="REST API for AI-assisted network troubleshooting and complaint logging",
-    version="1.0.0",
+    description="REST API for AI-assisted network troubleshooting, complaint registration, and staff management",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -93,13 +120,15 @@ PROBLEM_TYPE_OPTIONS = [
 
 @app.get("/api/config", response_model=ConfigResponse, tags=["config"])
 async def get_config():
-    """Returns application configuration, locations, and problem type labels."""
+    """Returns application configuration, locations, problem type labels, and allowed email domain."""
+    allowed_domain = getattr(settings, "ALLOWED_EMAIL_DOMAIN", "mnnit.ac.in") or "mnnit.ac.in"
     return ConfigResponse(
         college_name=settings.COLLEGE_NAME,
         locations=DEFAULT_LOCATIONS,
         problem_types=PROBLEM_TYPE_OPTIONS,
         max_chat_messages=settings.MAX_CHAT_MESSAGES,
-        max_upload_mb=settings.MAX_UPLOAD_MB
+        max_upload_mb=settings.MAX_UPLOAD_MB,
+        allowed_email_domain=allowed_domain
     )
 
 
@@ -112,6 +141,16 @@ app.include_router(admin_reference.router, prefix="/api")
 app.include_router(network_config.router, prefix="/api")
 app.include_router(network_assets_router, prefix="/api")
 
+# Include Part 2 Routers
+app.include_router(public_otp.router, prefix="/api")
+app.include_router(student_actions.router, prefix="/api")
+app.include_router(auth_router.router, prefix="/api")
+app.include_router(manager_complaints.router, prefix="/api")
+app.include_router(leaderboard.router, prefix="/api")
+app.include_router(technician_complaints.router, prefix="/api")
+app.include_router(admin_staff.router, prefix="/api")
+app.include_router(admin_junk.router, prefix="/api")
+
 
 # Serve frontend static assets with server-side route guards
 frontend_dist = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
@@ -122,20 +161,20 @@ if os.path.exists(frontend_dist):
     async def serve_frontend_spa(full_path: str, request: Request):
         path_str = full_path.strip("/")
 
-        # Check if request is for admin page route (excluding admin/login)
+        # Check if request is for admin page route (excluding admin/login and login)
         if path_str == "admin" or (path_str.startswith("admin/") and path_str != "admin/login"):
-            token = request.cookies.get("admin_token")
+            token = request.cookies.get("admin_token") or request.cookies.get("staff_token")
             auth_header = request.headers.get("Authorization")
             if auth_header and auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
 
             if not token:
-                return RedirectResponse(url="/admin/login", status_code=302)
+                return RedirectResponse(url="/login", status_code=302)
 
             try:
                 verify_token(token)
             except Exception:
-                return RedirectResponse(url="/admin/login", status_code=302)
+                return RedirectResponse(url="/login", status_code=302)
 
         file_path = os.path.join(frontend_dist, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):

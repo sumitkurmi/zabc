@@ -5,8 +5,8 @@ import io
 import csv
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from backend.app.deps import require_admin
-from backend.app.network_assets.models import AssetCategory, AssetStatus, LocationType
+from backend.app.auth.jwt_auth import require_roles
+from backend.app.network_assets.models import AssetCategory, AssetStatus, LocationType, Warranty
 from backend.app.network_assets.schemas import (
     AssetCreateRequest,
     AssetUpdateRequest,
@@ -47,16 +47,18 @@ from backend.app.network_assets.repository import (
 
 router = APIRouter(
     prefix="/admin/network-assets",
-    tags=["admin_network_assets"],
-    dependencies=[Depends(require_admin)]
+    tags=["admin_network_assets"]
 )
 
 
 # --- ASSET ENDPOINTS ---
 
 @router.post("/assets", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
-async def create_asset(payload: AssetCreateRequest):
-    """Creates a new network asset record."""
+async def create_asset(
+    payload: AssetCreateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Creates a new network asset record (Admin only)."""
     try:
         data = payload.model_dump(exclude_unset=True)
         asset_id = await AssetService.create_asset(data)
@@ -74,9 +76,10 @@ async def list_assets(
     q: Optional[str] = Query(None),
     warranty_expiring_days: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100)
+    limit: int = Query(20, ge=1, le=100),
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
 ):
-    """Lists network assets with filters and pagination."""
+    """Lists network assets with filters and pagination (Read-only for Manager/Technician)."""
     res = await AssetService.list_assets(
         category=category,
         status=status,
@@ -96,7 +99,10 @@ async def list_assets(
 
 
 @router.get("/assets/{asset_id}", response_model=AssetResponse)
-async def get_asset_detail(asset_id: str):
+async def get_asset_detail(
+    asset_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Retrieves full asset details including warranty and history."""
     try:
         asset = await AssetService.get_asset(asset_id)
@@ -106,13 +112,16 @@ async def get_asset_detail(asset_id: str):
 
 
 @router.put("/assets/{asset_id}", response_model=AssetResponse)
-async def update_asset(asset_id: str, payload: AssetUpdateRequest):
-    """Edits basic details of an existing asset."""
+async def update_asset(
+    asset_id: str,
+    payload: AssetUpdateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Edits basic details of an existing asset (Admin only)."""
     try:
         data = payload.model_dump(exclude_unset=True)
         if "warranty" in data and data["warranty"]:
             w = data["warranty"]
-            # calculate active flag
             w_obj = Warranty(w.get("start_date"), w.get("end_date"), w.get("vendor"))
             w["is_active"] = w_obj.is_active()
 
@@ -127,8 +136,11 @@ async def update_asset(asset_id: str, payload: AssetUpdateRequest):
 
 
 @router.delete("/assets/{asset_id}")
-async def delete_asset(asset_id: str):
-    """Deletes asset, or marks RETIRED if maintenance history exists."""
+async def delete_asset(
+    asset_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Deletes asset, or marks RETIRED if maintenance history exists (Admin only)."""
     try:
         res = await AssetService.delete_asset(asset_id)
         return res
@@ -137,8 +149,12 @@ async def delete_asset(asset_id: str):
 
 
 @router.patch("/assets/{asset_id}/status", response_model=AssetResponse)
-async def change_asset_status(asset_id: str, payload: AssetStatusPatchRequest):
-    """Transitions asset status requiring a justification reason."""
+async def change_asset_status(
+    asset_id: str,
+    payload: AssetStatusPatchRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Transitions asset status requiring a justification reason (Admin only)."""
     try:
         await AssetService.update_asset_status(
             asset_id=asset_id,
@@ -153,8 +169,12 @@ async def change_asset_status(asset_id: str, payload: AssetStatusPatchRequest):
 
 
 @router.patch("/assets/{asset_id}/location", response_model=AssetResponse)
-async def change_asset_location(asset_id: str, payload: AssetLocationPatchRequest):
-    """Moves asset to a new campus location."""
+async def change_asset_location(
+    asset_id: str,
+    payload: AssetLocationPatchRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Moves asset to a new campus location (Admin only)."""
     try:
         await AssetService.update_asset_location(asset_id, payload.location_id)
         asset = await AssetService.get_asset(asset_id)
@@ -164,8 +184,12 @@ async def change_asset_location(asset_id: str, payload: AssetLocationPatchReques
 
 
 @router.post("/assets/{asset_id}/replace", response_model=AssetResponse)
-async def replace_asset(asset_id: str, payload: AssetReplaceRequest):
-    """Marks original asset REPLACED and links new asset ID."""
+async def replace_asset(
+    asset_id: str,
+    payload: AssetReplaceRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Marks original asset REPLACED and links new asset ID (Admin only)."""
     try:
         await AssetService.replace_asset(
             asset_id=asset_id,
@@ -182,7 +206,11 @@ async def replace_asset(asset_id: str, payload: AssetReplaceRequest):
 # --- MAINTENANCE ENDPOINTS ---
 
 @router.post("/assets/{asset_id}/maintenance", response_model=AssetResponse)
-async def add_maintenance_record(asset_id: str, payload: MaintenanceRecordSchema):
+async def add_maintenance_record(
+    asset_id: str,
+    payload: MaintenanceRecordSchema,
+    staff_user: dict = Depends(require_roles("ADMIN", "TECHNICIAN"))
+):
     """Adds a maintenance event to asset history."""
     try:
         await AssetService.add_maintenance_record(
@@ -200,7 +228,10 @@ async def add_maintenance_record(asset_id: str, payload: MaintenanceRecordSchema
 
 
 @router.get("/assets/{asset_id}/maintenance", response_model=List[MaintenanceRecordSchema])
-async def list_maintenance_history(asset_id: str):
+async def list_maintenance_history(
+    asset_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Lists maintenance history entries for an asset."""
     try:
         asset = await AssetService.get_asset(asset_id)
@@ -212,8 +243,11 @@ async def list_maintenance_history(asset_id: str):
 # --- LOCATION ENDPOINTS ---
 
 @router.post("/locations", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
-async def create_location(payload: LocationCreateRequest):
-    """Creates a new campus location record."""
+async def create_location(
+    payload: LocationCreateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Creates a new campus location record (Admin only)."""
     try:
         loc_id = await LocationService.create_location(
             name=payload.name,
@@ -229,14 +263,19 @@ async def create_location(payload: LocationCreateRequest):
 
 
 @router.get("/locations", response_model=List[LocationTreeNode])
-async def list_locations():
+async def list_locations(
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Returns location hierarchy as a nested tree."""
     tree = await LocationService.list_locations_tree()
     return tree
 
 
 @router.get("/locations/{loc_id}", response_model=LocationDetailResponse)
-async def get_location_detail(loc_id: str):
+async def get_location_detail(
+    loc_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Gets details, installed assets, and switch ports serving location."""
     loc = await LocationRepository.find_by_id(loc_id)
     if not loc:
@@ -256,8 +295,12 @@ async def get_location_detail(loc_id: str):
 
 
 @router.put("/locations/{loc_id}", response_model=LocationResponse)
-async def update_location(loc_id: str, payload: LocationUpdateRequest):
-    """Updates location name, code, type, or parent."""
+async def update_location(
+    loc_id: str,
+    payload: LocationUpdateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Updates location name, code, type, or parent (Admin only)."""
     data = payload.model_dump(exclude_unset=True)
     if "type" in data and data["type"]:
         data["type"] = data["type"].value if hasattr(data["type"], "value") else str(data["type"])
@@ -272,8 +315,11 @@ async def update_location(loc_id: str, payload: LocationUpdateRequest):
 
 
 @router.delete("/locations/{loc_id}")
-async def delete_location(loc_id: str):
-    """Deletes location if no assets, ports, or children exist in it."""
+async def delete_location(
+    loc_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Deletes location if no assets, ports, or children exist in it (Admin only)."""
     try:
         await LocationService.delete_location(loc_id)
         return {"message": "Location deleted successfully."}
@@ -284,8 +330,12 @@ async def delete_location(loc_id: str):
 # --- SWITCH PORT ENDPOINTS ---
 
 @router.post("/switches/{switch_id}/ports", response_model=List[SwitchPortResponse], status_code=status.HTTP_201_CREATED)
-async def bulk_create_ports(switch_id: str, payload: SwitchPortCreateBulkRequest):
-    """Bulk creates ports for an Ethernet Switch."""
+async def bulk_create_ports(
+    switch_id: str,
+    payload: SwitchPortCreateBulkRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Bulk creates ports for an Ethernet Switch (Admin only)."""
     try:
         created_ids = await PortMappingService.bulk_create_ports(
             switch_id=switch_id,
@@ -300,15 +350,22 @@ async def bulk_create_ports(switch_id: str, payload: SwitchPortCreateBulkRequest
 
 
 @router.get("/switches/{switch_id}/ports", response_model=List[SwitchPortResponse])
-async def list_switch_ports(switch_id: str):
+async def list_switch_ports(
+    switch_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Lists port map of a switch."""
     ports = await SwitchPortRepository.list_by_switch(switch_id)
     return [SwitchPortResponse(**p) for p in ports]
 
 
 @router.put("/ports/{port_id}", response_model=SwitchPortResponse)
-async def update_port(port_id: str, payload: SwitchPortUpdateRequest):
-    """Updates port assignment, VLAN, patch panel link, or status."""
+async def update_port(
+    port_id: str,
+    payload: SwitchPortUpdateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Updates port assignment, VLAN, patch panel link, or status (Admin only)."""
     data = payload.model_dump(exclude_unset=True)
     updated = await SwitchPortRepository.update_port(port_id, data)
     if not updated:
@@ -319,7 +376,10 @@ async def update_port(port_id: str, payload: SwitchPortUpdateRequest):
 
 
 @router.get("/locations/{loc_id}/ports", response_model=List[SwitchPortResponse])
-async def list_ports_for_location(loc_id: str):
+async def list_ports_for_location(
+    loc_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Lists switch ports serving a given room location."""
     ports = await SwitchPortRepository.list_by_location(loc_id)
     return [SwitchPortResponse(**p) for p in ports]
@@ -328,8 +388,11 @@ async def list_ports_for_location(loc_id: str):
 # --- STOCK ENDPOINTS ---
 
 @router.post("/stock", response_model=StockResponse, status_code=status.HTTP_201_CREATED)
-async def create_stock_item(payload: StockCreateRequest):
-    """Creates a bulk stock item entry."""
+async def create_stock_item(
+    payload: StockCreateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Creates a bulk stock item entry (Admin only)."""
     try:
         item_id = await StockService.create_stock_item(
             item_type=payload.item_type,
@@ -346,15 +409,22 @@ async def create_stock_item(payload: StockCreateRequest):
 
 
 @router.get("/stock", response_model=List[StockResponse])
-async def list_stock_items(low_stock: bool = Query(False)):
+async def list_stock_items(
+    low_stock: bool = Query(False),
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Lists stock items with optional low_stock filter."""
     items = await StockRepository.list_items(low_stock_only=low_stock)
     return [StockResponse(**i) for i in items]
 
 
 @router.put("/stock/{item_id}", response_model=StockResponse)
-async def update_stock_item(item_id: str, payload: StockUpdateRequest):
-    """Edits stock item details."""
+async def update_stock_item(
+    item_id: str,
+    payload: StockUpdateRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Edits stock item details (Admin only)."""
     data = payload.model_dump(exclude_unset=True)
     if "quantity_available" in data or "minimum_level" in data:
         item = await StockRepository.find_item_by_id(item_id)
@@ -371,14 +441,18 @@ async def update_stock_item(item_id: str, payload: StockUpdateRequest):
 
 
 @router.post("/stock/{item_id}/issue", response_model=StockResponse)
-async def issue_stock(item_id: str, payload: StockIssueRequest):
+async def issue_stock(
+    item_id: str,
+    payload: StockIssueRequest,
+    staff_user: dict = Depends(require_roles("ADMIN", "TECHNICIAN"))
+):
     """Issues quantity out of inventory."""
     try:
         await StockService.issue_stock(
             item_id=item_id,
             qty=payload.quantity,
             reason=payload.reason,
-            by=payload.by or "admin"
+            by=payload.by or staff_user.get("full_name", "staff")
         )
         item = await StockRepository.find_item_by_id(item_id)
         return StockResponse(**item)
@@ -387,8 +461,12 @@ async def issue_stock(item_id: str, payload: StockIssueRequest):
 
 
 @router.post("/stock/{item_id}/restock", response_model=StockResponse)
-async def restock_stock(item_id: str, payload: StockRestockRequest):
-    """Adds restock quantity to inventory."""
+async def restock_stock(
+    item_id: str,
+    payload: StockRestockRequest,
+    staff_user: dict = Depends(require_roles("ADMIN"))
+):
+    """Adds restock quantity to inventory (Admin only)."""
     try:
         await StockService.restock_stock(
             item_id=item_id,
@@ -402,7 +480,10 @@ async def restock_stock(item_id: str, payload: StockRestockRequest):
 
 
 @router.get("/stock/{item_id}/transactions", response_model=List[StockTransactionResponse])
-async def list_stock_transactions(item_id: str):
+async def list_stock_transactions(
+    item_id: str,
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Lists movement history logs for a stock item."""
     txs = await StockRepository.list_transactions(item_id)
     return [StockTransactionResponse(**t) for t in txs]
@@ -411,7 +492,9 @@ async def list_stock_transactions(item_id: str):
 # --- REPORT ENDPOINTS ---
 
 @router.get("/reports/summary", response_model=SummaryReportResponse)
-async def get_summary_report():
+async def get_summary_report(
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Generates counts by category, status, spare, faulty, and low-stock totals."""
     all_assets_res = await NetworkAssetRepository.list_assets(limit=1000)
     assets = all_assets_res["assets"]
@@ -452,7 +535,9 @@ async def get_summary_report():
 
 
 @router.get("/reports/export")
-async def export_assets_csv():
+async def export_assets_csv(
+    staff_user: dict = Depends(require_roles("ADMIN", "MANAGER", "TECHNICIAN"))
+):
     """Generates downloadable CSV file of all network assets."""
     all_assets_res = await NetworkAssetRepository.list_assets(limit=5000)
     assets = all_assets_res["assets"]
@@ -460,7 +545,6 @@ async def export_assets_csv():
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # Header
     writer.writerow([
         "ID", "Asset Tag", "Category", "Make", "Model", "Serial Number",
         "Location ID", "Status", "Installation Date", "Installed By", "IP Address", "MAC Address"
