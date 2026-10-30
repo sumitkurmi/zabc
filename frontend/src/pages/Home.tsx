@@ -117,9 +117,11 @@ export const Home: React.FC = () => {
       <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
-              MNNIT
-            </div>
+            <img
+              src={logo}
+              alt="MNNIT Allahabad Logo"
+              className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-white/20 shadow-sm"
+            />
             <div>
               <h1 className="text-base sm:text-lg font-bold tracking-tight">
                 {config?.college_name || 'MNNIT Allahabad'}

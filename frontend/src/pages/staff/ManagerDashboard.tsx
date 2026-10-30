@@ -31,6 +31,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+import logo from '../../assets/logo.jpeg'
+
 export const ManagerDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'queue' | 'techs' | 'reports' | 'leaderboard'>('queue');
   const [queueView, setQueueView] = useState<'open_unassigned' | 'open' | 'closed' | 'all'>('open');
@@ -138,9 +140,11 @@ export const ManagerDashboard: React.FC = () => {
       <header className="bg-mnnit-blue text-white shadow-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
-              MNNIT
-            </div>
+            <img
+              src={logo}
+              alt="MNNIT Allahabad Logo"
+              className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 border border-white/20 shadow-sm"
+            />
             <div>
               <h1 className="text-base font-bold">Manager Operations Dashboard</h1>
               <p className="text-[11px] text-slate-200">Network Complaint Lifecycle & Dispatch</p>
