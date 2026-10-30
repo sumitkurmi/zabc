@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchTokenInfo, confirmResolution } from '../../api/complaints';
-import { CheckCircle2, XCircle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, ShieldCheck, Shield } from 'lucide-react';
 
 export const ConfirmComplaint: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -40,15 +40,58 @@ export const ConfirmComplaint: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
+                MNNIT
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold tracking-tight">MNNIT Allahabad</h1>
+                <p className="text-[11px] text-slate-200">Network Complaint & AI Diagnosis Portal</p>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden w-full max-w-lg p-8">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+      {/* College Header */}
+      <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
+              MNNIT
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight">
+                MNNIT Allahabad
+              </h1>
+              <p className="text-[11px] text-slate-200">Network Complaint & AI Diagnosis Portal</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link
+              to="/login"
+              className="text-xs font-semibold text-slate-200 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <Shield className="w-3.5 h-3.5 text-mnnit-gold" />
+              <span>Staff Login</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden w-full max-w-lg p-8">
         <div className="text-center mb-6">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <ShieldCheck className="w-6 h-6" />
@@ -132,7 +175,12 @@ export const ConfirmComplaint: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </main>
+
+      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        © {new Date().getFullYear()} MNNIT Allahabad IT Services. All Rights Reserved.
+      </footer>
     </div>
   );
 };

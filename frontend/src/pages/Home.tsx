@@ -114,7 +114,7 @@ export const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* College Header */}
-      {/* <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
+      <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">

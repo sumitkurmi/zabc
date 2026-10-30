@@ -2,9 +2,9 @@
 // Staff user login page with bcrypt credential validation and role-based redirect.
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginStaff } from '../../api/auth';
-import { Shield, Lock, User, AlertCircle } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, Home } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -45,8 +45,36 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden w-full max-w-md">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+      {/* College Header */}
+      <header className="bg-mnnit-blue text-white shadow-lg sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-mnnit-gold border border-white/20 text-sm">
+              MNNIT
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight">
+                MNNIT Allahabad
+              </h1>
+              <p className="text-[11px] text-slate-200">Network Complaint & AI Diagnosis Portal</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="text-xs font-semibold text-slate-200 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <Home className="w-3.5 h-3.5 text-mnnit-gold" />
+              <span>Student View</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden w-full max-w-md">
         <div className="bg-mnnit-blue text-white p-8 text-center">
           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
             <Shield className="w-6 h-6 text-mnnit-gold" />
@@ -105,7 +133,12 @@ export const Login: React.FC = () => {
             )}
           </button>
         </form>
-      </div>
+        </div>
+      </main>
+
+      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        © {new Date().getFullYear()} MNNIT Allahabad IT Services. All Rights Reserved.
+      </footer>
     </div>
   );
 };

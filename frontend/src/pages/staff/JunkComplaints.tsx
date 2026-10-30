@@ -2,8 +2,10 @@
 // JunkComplaints page for admins to view, restore, and permanently clear junk complaints.
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchJunkComplaints, restoreJunk, clearAllJunk } from '../../api/complaints';
-import { Trash2, RotateCcw, AlertTriangle, Shield, Calendar } from 'lucide-react';
+import { adminLogout } from '../../api/admin';
+import { Trash2, RotateCcw, AlertTriangle, Shield, Calendar, ArrowLeft, LogOut } from 'lucide-react';
 
 export const JunkComplaints: React.FC = () => {
   const [junkList, setJunkList] = useState<any[]>([]);
@@ -44,8 +46,36 @@ export const JunkComplaints: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    adminLogout();
+    window.location.href = '/login';
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+      {/* Header */}
+      <header className="bg-mnnit-blue text-white shadow-md">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/admin" className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <h1 className="text-lg font-bold">Junk Bin Management</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8 w-full flex-1">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
           <Trash2 className="w-5 h-5 text-amber-600" />
@@ -100,6 +130,8 @@ export const JunkComplaints: React.FC = () => {
           </table>
         </div>
       )}
+        </div>
+      </main>
     </div>
   );
 };
