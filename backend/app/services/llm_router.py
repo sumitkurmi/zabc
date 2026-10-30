@@ -194,6 +194,57 @@ class LLMRouter:
 
         return await self.providers["mock"].summarize_transcript(transcript_text)
 
+    async def classify_complaint(
+        self,
+        student_problem_type: str,
+        location_name: str,
+        comment_text: str,
+        chat_summary: str
+    ) -> Dict[str, Any]:
+        """Classifies a new complaint with multi-provider fallback."""
+        clients = self.get_configured_providers()
+        real_failed = False
+
+        for client in clients:
+            start_t = time.perf_counter()
+            model_name = getattr(client, "model", "n/a")
+            try:
+                res = await client.classify_complaint(student_problem_type, location_name, comment_text, chat_summary)
+                elapsed = time.perf_counter() - start_t
+                logger.info(f"[LLMRouter] classify_complaint served by provider '{client.provider_name}' (model={model_name}) in {elapsed:.2f}s")
+                res["provider"] = client.provider_name
+                res["model"] = model_name
+                return res
+            except Exception as e:
+                elapsed = time.perf_counter() - start_t
+                err_detail = self._format_exception(e)
+                logger.warning(
+                    f"[LLMRouter] Provider '{client.provider_name}' (model={model_name}) failed classify_complaint "
+                    f"in {elapsed:.2f}s: {err_detail}. Falling back..."
+                )
+                if client.provider_name != "mock":
+                    real_failed = True
+
+        if real_failed:
+            logger.warning("ALL REAL PROVIDERS FAILED - using mock classification")
+
+        res = await self.providers["mock"].classify_complaint(student_problem_type, location_name, comment_text, chat_summary)
+        res["provider"] = "mock"
+        res["model"] = "mock-v1"
+        return res
+
+    async def rewrite_assignment_reason(self, deterministic_reason: str) -> str:
+        """Rewrites assignment reason with multi-provider fallback."""
+        clients = self.get_configured_providers()
+
+        for client in clients:
+            try:
+                return await client.rewrite_assignment_reason(deterministic_reason)
+            except Exception as e:
+                logger.warning(f"[LLMRouter] Provider '{client.provider_name}' failed rewrite_assignment_reason: {e}")
+
+        return await self.providers["mock"].rewrite_assignment_reason(deterministic_reason)
+
 
 # Global singleton instance
 llm_router = LLMRouter()

@@ -46,13 +46,70 @@ def render_template(template_name: str, context: dict) -> tuple[str, str, str]:
 
     elif template_name == "complaint_assigned":
         tech_name = context.get("technician_name", "Network Technician")
-        subject = f"[MNNIT Network] Technician Assigned - Ticket #{ticket_id}"
-        text = f"Dear {name},\n\nTechnician {tech_name} has been assigned to your complaint (Ticket #{ticket_id}).\n\nIT Services, MNNIT Allahabad"
-        html = f"""<html><body style="font-family: Arial, sans-serif; color: #333;">
+        to_role = context.get("to_role", "STUDENT")
+        priority = context.get("priority", "MEDIUM")
+
+        if to_role == "TECHNICIAN":
+            subject = f"[{priority}] Complaint {ticket_id} assigned to you"
+            text = f"""Dear {tech_name},
+
+Complaint {ticket_id} has been assigned to you.
+
+Priority: {priority}
+Student Category: {context.get('student_category')}
+Agent Category: {context.get('agent_category')} (Confidence: {context.get('confidence')})
+Location: {context.get('location')} ({context.get('address_room')})
+Affected Users: {context.get('affected_users')}
+Affected Equipment: {context.get('affected_equipment')}
+Assignment Reason: {context.get('assignment_reason')}
+
+Summary:
+{context.get('summary')}
+
+Similar Complaints / Solutions:
+{context.get('similar_solutions')}
+
+IT Services, MNNIT Allahabad"""
+
+            html = f"""<html><body style="font-family: Arial, sans-serif; color: #333;">
+<h2>Complaint Assigned to You</h2>
+<p>Dear <b>{tech_name}</b>,</p>
+<p>Complaint <b>Ticket #{ticket_id}</b> has been assigned to you.</p>
+<div style="background: #f8fafc; padding: 14px; border-radius: 8px; border-left: 4px solid #0284c7; margin-bottom: 16px;">
+  <p><b>Priority:</b> <span style="color: #dc2626; font-weight: bold;">{priority}</span></p>
+  <p><b>Student Category:</b> {context.get('student_category')}</p>
+  <p><b>AI Agent Category:</b> {context.get('agent_category')} (Confidence: {context.get('confidence')})</p>
+  <p><b>Location:</b> {context.get('location')} ({context.get('address_room')})</p>
+  <p><b>Affected Users:</b> {context.get('affected_users')}</p>
+  <p><b>Affected Equipment:</b> {context.get('affected_equipment')}</p>
+  <p><b>Assignment Reason:</b> {context.get('assignment_reason')}</p>
+</div>
+<p><b>Issue Summary:</b></p>
+<p style="background: #f1f5f9; padding: 10px; border-radius: 6px;">{context.get('summary')}</p>
+<p><b>Similar Complaints & Solutions:</b></p>
+<p style="background: #f1f5f9; padding: 10px; border-radius: 6px;">{context.get('similar_solutions')}</p>
+<br><p>Regards,<br>IT Services Team, MNNIT Allahabad</p>
+</body></html>"""
+        else:
+            subject = f"[MNNIT Network] Technician Assigned - Ticket #{ticket_id}"
+            text = f"Dear {name},\n\nTechnician {tech_name} has been assigned to your complaint (Ticket #{ticket_id}).\n\nIT Services, MNNIT Allahabad"
+            html = f"""<html><body style="font-family: Arial, sans-serif; color: #333;">
 <h2>Technician Assigned</h2>
 <p>Dear <b>{name}</b>,</p>
 <p>Technician <b>{tech_name}</b> has been assigned to investigate your complaint (<b>Ticket #{ticket_id}</b>).</p>
 <p>They will contact or visit your specified room within preferred hours.</p>
+<br><p>Regards,<br>IT Services Team, MNNIT Allahabad</p>
+</body></html>"""
+
+    elif template_name == "complaint_needs_attention":
+        subject = f"[MNNIT Network] ATTENTION REQUIRED - Unassigned Complaint Ticket #{ticket_id}"
+        reason = context.get("reason", "No available technician found")
+        text = f"Attention Required,\n\nComplaint Ticket #{ticket_id} requires manager attention.\nReason: {reason}\n\nIT Services, MNNIT Allahabad"
+        html = f"""<html><body style="font-family: Arial, sans-serif; color: #333;">
+<h2>Manager Attention Required</h2>
+<p>Complaint <b>Ticket #{ticket_id}</b> could not be automatically assigned to a technician.</p>
+<p><b>Reason:</b> {reason}</p>
+<p>Please log in to the portal to manually review and assign this complaint.</p>
 <br><p>Regards,<br>IT Services Team, MNNIT Allahabad</p>
 </body></html>"""
 
