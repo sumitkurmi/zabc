@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getAdminStats, adminLogout } from '../../api/admin';
 import { fetchAgentStatus } from '../../api/complaints';
 import { AdminStatsResponse } from '../../types';
-import { MessageSquare, BookOpen, LogOut, FileText, Activity, Server, Users, Trash2, Settings, Trophy, Shield, Inbox, Bot } from 'lucide-react';
+import { MessageSquare, BookOpen, LogOut, FileText, Activity, Server, Users, Trash2, Settings, Trophy, Shield, Inbox, Bot, Home } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
@@ -50,10 +50,11 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             <Link
-            to="/"
-           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/80 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors"
-             >
-              Student View
+              to="/"
+              className="text-xs font-semibold text-slate-200 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <Home className="w-3.5 h-3.5 text-mnnit-gold" />
+              <span>Student View</span>
             </Link>
             <button
               onClick={handleLogout}
