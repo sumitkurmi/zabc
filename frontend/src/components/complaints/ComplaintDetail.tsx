@@ -6,6 +6,8 @@ import { StatusBadge } from './StatusBadge';
 import { HistoryTimeline } from './HistoryTimeline';
 import { StarRating } from './StarRating';
 import { AssignDialog } from './AssignDialog';
+import { LifecycleStepper } from '../agentic/LifecycleStepper';
+import { AgentAnalysisCard } from '../agentic/AgentAnalysisCard';
 import { markJunk } from '../../api/complaints';
 import { User, Phone, Mail, MapPin, Clock, Wrench, Shield, MessageSquare, AlertTriangle, ArrowLeft } from 'lucide-react';
 
@@ -40,6 +42,9 @@ export const ComplaintDetail: React.FC<ComplaintDetailProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 7-Stage Lifecycle Stepper */}
+      <LifecycleStepper currentStatus={complaint.status} history={complaint.history || []} />
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
@@ -86,6 +91,18 @@ export const ComplaintDetail: React.FC<ComplaintDetailProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Student Info & Resolution */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Agentic Analysis Card */}
+          {complaint.agent_analysis && (
+            <AgentAnalysisCard
+              ticketId={complaint.ticket_id}
+              userRole={userRole as any}
+              agentAnalysis={complaint.agent_analysis}
+              assignedTechnicianId={complaint.assigned_technician_id}
+              onRefresh={onRefresh}
+              onOpenManualAssign={() => setIsAssignOpen(true)}
+            />
+          )}
+
           {/* Student Info Card */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h2 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">

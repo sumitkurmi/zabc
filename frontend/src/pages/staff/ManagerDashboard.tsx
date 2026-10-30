@@ -42,6 +42,7 @@ export const ManagerDashboard: React.FC = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [problemTypeFilter, setProblemTypeFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -62,6 +63,7 @@ export const ManagerDashboard: React.FC = () => {
     if (activeTab === 'queue') {
       fetchManagerComplaints({
         view: queueView,
+        priority: priorityFilter || undefined,
         problem_type: problemTypeFilter || undefined,
         location: locationFilter || undefined,
         q: searchQuery || undefined,
@@ -90,7 +92,7 @@ export const ManagerDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, queueView, problemTypeFilter, locationFilter, page, reportRange]);
+  }, [activeTab, queueView, priorityFilter, problemTypeFilter, locationFilter, page, reportRange]);
 
   const handleSelectComplaint = async (ticketId: string) => {
     try {
@@ -193,6 +195,12 @@ export const ManagerDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-slate-900 mt-2">{summary?.open_unassigned ?? 0}</div>
+                {summary?.by_priority && (
+                  <div className="flex gap-1.5 mt-2 text-[10px] font-bold">
+                    <span className="text-red-700 bg-red-50 px-1.5 py-0.5 rounded">{summary.by_priority.CRITICAL || 0} CRITICAL</span>
+                    <span className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{summary.by_priority.HIGH || 0} HIGH</span>
+                  </div>
+                )}
               </div>
 
               <div
@@ -306,8 +314,33 @@ export const ManagerDashboard: React.FC = () => {
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-2 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-64">
+                  <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
+                      className="px-2.5 py-1.5 border border-slate-300 rounded-xl bg-white text-xs font-semibold"
+                    >
+                      <option value="">All Priorities</option>
+                      <option value="CRITICAL">CRITICAL</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="LOW">LOW</option>
+                    </select>
+
+                    <select
+                      value={problemTypeFilter}
+                      onChange={(e) => { setProblemTypeFilter(e.target.value); setPage(1); }}
+                      className="px-2.5 py-1.5 border border-slate-300 rounded-xl bg-white text-xs font-semibold"
+                    >
+                      <option value="">All Categories</option>
+                      <option value="WIFI_PROBLEM">WIFI PROBLEM</option>
+                      <option value="LAN_PROBLEM">LAN PROBLEM</option>
+                      <option value="IP_ADDRESS_ISSUE">I.P ADDRESS ISSUE</option>
+                      <option value="PROXY_ISSUE">PROXY ISSUE</option>
+                      <option value="LAN_PORT_BROKEN">LAN PORT BROKEN</option>
+                    </select>
+
+                    <div className="relative flex-1 md:w-56">
                       <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                       <input
                         type="text"

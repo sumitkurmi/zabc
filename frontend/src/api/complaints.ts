@@ -65,9 +65,11 @@ export async function fetchManagerSummary() {
 export async function fetchManagerComplaints(params: {
   view?: string;
   status?: string;
+  priority?: string;
   problem_type?: string;
   location?: string;
   technician_id?: string;
+  sort?: string;
   q?: string;
   page?: number;
   limit?: number;
@@ -75,14 +77,38 @@ export async function fetchManagerComplaints(params: {
   const query = new URLSearchParams();
   if (params.view) query.set('view', params.view);
   if (params.status) query.set('status', params.status);
+  if (params.priority) query.set('priority', params.priority);
   if (params.problem_type) query.set('problem_type', params.problem_type);
   if (params.location) query.set('location', params.location);
   if (params.technician_id) query.set('technician_id', params.technician_id);
+  if (params.sort) query.set('sort', params.sort);
   if (params.q) query.set('q', params.q);
   if (params.page) query.set('page', String(params.page));
   if (params.limit) query.set('limit', String(params.limit));
 
   return fetchApi<{ complaints: any[]; total: number; page: number; pages: number }>(`/manager/complaints?${query.toString()}`);
+}
+
+export async function runAgentPipeline(ticket_id: string) {
+  return fetchApi<{ message: string; ticket_id: string; job_id: string }>(`/manager/complaints/${ticket_id}/agent/run`, {
+    method: 'POST'
+  });
+}
+
+export async function acceptAgentSuggestion(ticket_id: string) {
+  return fetchApi<{ message: string; ticket_id: string }>(`/manager/complaints/${ticket_id}/agent/accept-suggestion`, {
+    method: 'POST'
+  });
+}
+
+export async function fetchAgentStatus() {
+  return fetchApi<{
+    enabled: boolean;
+    mode: string;
+    pending_jobs: number;
+    failed_jobs: number;
+    last_successful_run: string | null;
+  }>('/admin/agent/status');
 }
 
 export async function fetchComplaintDetail(ticket_id: string) {

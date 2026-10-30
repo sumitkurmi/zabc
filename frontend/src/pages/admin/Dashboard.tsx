@@ -4,11 +4,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAdminStats, adminLogout } from '../../api/admin';
+import { fetchAgentStatus } from '../../api/complaints';
 import { AdminStatsResponse } from '../../types';
-import { MessageSquare, BookOpen, LogOut, FileText, Activity, Server, Users, Trash2, Settings, Trophy, Shield, Inbox } from 'lucide-react';
+import { MessageSquare, BookOpen, LogOut, FileText, Activity, Server, Users, Trash2, Settings, Trophy, Shield, Inbox, Bot } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
+  const [agentStatus, setAgentStatus] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -21,6 +23,10 @@ export const Dashboard: React.FC = () => {
         }
       })
       .finally(() => setIsLoading(false));
+
+    fetchAgentStatus()
+      .then((res) => setAgentStatus(res))
+      .catch(() => {});
   }, [navigate]);
 
   const handleLogout = () => {
@@ -35,6 +41,12 @@ export const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold">MNNIT Network Admin Dashboard</h1>
+            {agentStatus && (
+              <span className="text-xs bg-indigo-900/60 text-indigo-200 border border-indigo-500/40 px-3 py-1 rounded-full font-mono flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                Agent: {agentStatus.enabled ? 'ON' : 'OFF'}, mode {agentStatus.mode}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <Link to="/" className="text-xs text-slate-200 hover:text-white underline">

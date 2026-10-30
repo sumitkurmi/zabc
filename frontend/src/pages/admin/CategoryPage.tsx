@@ -294,7 +294,14 @@ export const CategoryPage: React.FC = () => {
                             <FileText className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{doc.original_filename}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-800 truncate">{doc.original_filename}</p>
+                              {doc.source_type === 'COMPLAINT' && (
+                                <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full shrink-0">
+                                  From complaint
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                               <span>{(doc.size_bytes / 1024).toFixed(1)} KB</span>
                               <span>•</span>
@@ -326,8 +333,8 @@ export const CategoryPage: React.FC = () => {
 
 
 
-                          {/* View uploaded document */}
-                          {doc.source_type === 'UPLOAD' &&
+                          {/* View document */}
+                          {(doc.source_type === 'UPLOAD' || doc.source_type === 'COMPLAINT') &&
                             /\.(pdf|txt|docx)$/i.test(doc.original_filename) && (
                               <button
                                 type="button"

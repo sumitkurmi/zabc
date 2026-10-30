@@ -31,9 +31,11 @@ export const ComplaintList: React.FC<ComplaintListProps> = ({
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
               <th className="p-3">Ticket ID</th>
+              <th className="p-3">Priority</th>
               <th className="p-3">Student Name</th>
               <th className="p-3">Problem Type</th>
               <th className="p-3">Location</th>
+              <th className="p-3">Affected Users</th>
               <th className="p-3">Status</th>
               {showTechnician && <th className="p-3">Assigned Tech</th>}
               <th className="p-3">Registered At</th>
@@ -41,48 +43,70 @@ export const ComplaintList: React.FC<ComplaintListProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {complaints.map((c) => (
-              <tr
-                key={c.ticket_id}
-                onClick={() => onSelect(c.ticket_id)}
-                className="hover:bg-slate-50/80 cursor-pointer transition-colors"
-              >
-                <td className="p-3 font-mono font-bold text-blue-700">#{c.ticket_id}</td>
-                <td className="p-3 font-semibold text-slate-800">
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{c.name}</span>
-                  </div>
-                </td>
-                <td className="p-3 font-medium text-slate-700">{c.problem_type.replace(/_/g, ' ')}</td>
-                <td className="p-3 text-slate-600">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{c.location} ({c.address_room})</span>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <StatusBadge status={c.status} />
-                </td>
-                {showTechnician && (
-                  <td className="p-3 font-medium text-slate-700">
-                    {c.assigned_technician_name || <span className="text-slate-400 italic">Unassigned</span>}
+            {complaints.map((c) => {
+              const priority = c.priority || 'MEDIUM';
+              const pClass =
+                priority === 'CRITICAL'
+                  ? 'bg-red-100 text-red-800 border-red-200'
+                  : priority === 'HIGH'
+                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                  : priority === 'MEDIUM'
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+
+              return (
+                <tr
+                  key={c.ticket_id}
+                  onClick={() => onSelect(c.ticket_id)}
+                  className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                >
+                  <td className="p-3 font-mono font-bold text-blue-700">#{c.ticket_id}</td>
+                  <td className="p-3">
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase ${pClass}`}>
+                      {priority}
+                    </span>
                   </td>
-                )}
-                <td className="p-3 text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{new Date(c.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
-                  </div>
-                </td>
-                <td className="p-3 text-right">
-                  <button className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-800 font-semibold text-xs">
-                    <span>View</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td className="p-3 font-semibold text-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{c.name}</span>
+                    </div>
+                  </td>
+                  <td className="p-3 font-medium text-slate-700">{c.problem_type.replace(/_/g, ' ')}</td>
+                  <td className="p-3 text-slate-600">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{c.location} ({c.address_room})</span>
+                    </div>
+                  </td>
+                  <td className="p-3 font-medium text-slate-700">
+                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono text-[11px]">
+                      {c.affected_users_count || 1} user(s)
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <StatusBadge status={c.status} />
+                  </td>
+                  {showTechnician && (
+                    <td className="p-3 font-medium text-slate-700">
+                      {c.assigned_technician_name || <span className="text-slate-400 italic">Unassigned</span>}
+                    </td>
+                  )}
+                  <td className="p-3 text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{new Date(c.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
+                    </div>
+                  </td>
+                  <td className="p-3 text-right">
+                    <button className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-800 font-semibold text-xs">
+                      <span>View</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

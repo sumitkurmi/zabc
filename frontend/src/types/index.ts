@@ -7,7 +7,7 @@ export type ProblemType =
 
 export type ComplaintStatus = 'NEW' | 'IN_PROGRESS' | 'RESOLVED';
 export type ChatStatus = 'UNASSIGNED' | 'REFERENCE';
-export type DocumentSourceType = 'UPLOAD' | 'CHAT';
+export type DocumentSourceType = 'UPLOAD' | 'CHAT' | 'COMPLAINT';
 export type DocumentStatus = 'PROCESSING' | 'INDEXED' | 'FAILED';
 
 export interface LocationOption {
