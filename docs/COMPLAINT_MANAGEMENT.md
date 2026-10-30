@@ -99,9 +99,10 @@ stateDiagram-v2
 ---
 
 ## 7. Module 2 Integration Hooks
-- **Event Bus (`events.py`)**: Subscribes handlers to `complaint_registered`, `complaint_status_changed`, `complaint_assigned`, etc. Module 2 agents can subscribe to `complaint_registered` to run classification asynchronously.
-- **Classification Hook (`classification_service.py`)**: `classify(complaint)` currently retains the student's selected problem type. Module 2 will replace its internal logic with LLM classification.
-- **Single Transition Services (`status_service.py`, `assignment_service.py`)**: Centralized status and assignment transition entry points. Module 2 agents execute transitions with `actor_type="AGENT"`.
+- **Event Bus (`events.py`)**: Subscribes handlers to `complaint_registered`, `complaint_status_changed`, `complaint_assigned`, `complaint_needs_attention`, and `technician_availability_changed`.
+- **Classification Hook (`classification_service.py`)**: `classify_and_advance(ticket_id)` manages immediate transition (when `AGENT_ENABLED=false`) or enqueues a background `FULL` job in `agent_jobs` for autonomous AI classification and assignment.
+- **Single Transition Services (`status_service.py`, `assignment_service.py`)**: Centralized status and assignment transition entry points. Module 2 agents execute transitions with `actor_type="AGENT"` (e.g. `Classification Agent`, `Assignment Agent`).
+- **Agentic Documentation**: Refer to `docs/AGENTIC_ASSIGNMENT.md` for complete agent pipeline specifications, priority matrices, candidate scoring weights, and job queue mechanics.
 
 ---
 

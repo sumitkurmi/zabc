@@ -131,9 +131,10 @@ async def delete_document_and_vectors(document_id: str) -> None:
     doc = await find_document_by_id(document_id)
     if doc:
         doc_obj_id = doc["_id"]
-        # Delete file from disk if it was an uploaded file
+        # Delete file from disk if it was an uploaded file or complaint log file
         storage_path = doc.get("storage_path")
-        if storage_path and os.path.exists(storage_path) and doc.get("source_type") == DocumentSourceType.UPLOAD:
+        st_val = doc.get("source_type")
+        if storage_path and os.path.exists(storage_path) and st_val in [DocumentSourceType.UPLOAD.value, DocumentSourceType.COMPLAINT.value, "UPLOAD", "COMPLAINT"]:
             try:
                 os.remove(storage_path)
             except Exception:

@@ -39,10 +39,21 @@ async def notify(
     context["ticket_id"] = ticket_id
     context["public_url"] = getattr(settings, "PUBLIC_BASE_URL", "http://localhost:5173")
 
-    subject, text_body, html_body = render_template(event, context)
-
     # De-duplicate recipients
     clean_recipients = list(set([r.strip().lower() for r in recipients if r and r.strip()]))
+
+    # Channel-neutral alert message object
+    alert_message = {
+        "title": f"Ticket #{ticket_id}: {event}",
+        "priority": context.get("priority", "MEDIUM"),
+        "ticket_id": ticket_id,
+        "event": event,
+        "recipients": clean_recipients,
+        "link": f"{context.get('public_url')}/complaints/{ticket_id}"
+    }
+
+    # Render for email channel
+    subject, text_body, html_body = render_template(event, context)
 
     for recipient in clean_recipients:
         # If EMAIL_BACKEND is console in development, print immediately
@@ -51,7 +62,7 @@ async def notify(
 
         if email_backend == "console" and app_env == "development":
             logger.info("=" * 60)
-            logger.info(f"[CONSOLE EMAIL] Event: {event} | To: {recipient}")
+            logger.info(f"[CONSOLE EMAIL ALERT] Event: {event} | Priority: {alert_message['priority']} | To: {recipient}")
             logger.info(f"Subject: {subject}")
             logger.info("-" * 60)
             logger.info(text_body)
@@ -65,6 +76,7 @@ async def notify(
             "subject": subject,
             "html": html_body,
             "text": text_body,
+            "alert_message": alert_message,
             "status": "PENDING",
             "attempts": 0,
             "next_attempt_at": datetime.utcnow(),

@@ -12,6 +12,7 @@ Key Configurations:
 
 import os
 from typing import List
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,6 +68,14 @@ class Settings(BaseSettings):
     # Module 2 Agentic AI Settings
     AGENT_ENABLED: bool = True
     AGENT_ASSIGNMENT_MODE: str = "auto"  # auto | suggest | off
+
+    @field_validator("AGENT_ASSIGNMENT_MODE")
+    @classmethod
+    def validate_assignment_mode(cls, v: str) -> str:
+        clean = v.strip().lower() if v else "auto"
+        if clean not in ["auto", "suggest", "off"]:
+            raise ValueError(f"Invalid AGENT_ASSIGNMENT_MODE '{v}'. Must be 'auto', 'suggest', or 'off'.")
+        return clean
     AGENT_USE_LLM: bool = True
     AGENT_LLM_REASON: bool = True
     AGENT_CATEGORY_MIN_CONFIDENCE: float = 0.75

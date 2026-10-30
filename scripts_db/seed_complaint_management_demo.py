@@ -83,14 +83,14 @@ async def seed_complaint_management_demo(remove_only: bool = False):
 
     # Technicians
     techs_spec = [
-        ("demo_tech1", "Ramesh Kumar (Hostels)", TechnicianAvailability.AVAILABLE.value, ["SVBH Hostel", "PG Hostel"]),
-        ("demo_tech2", "Suresh Verma (Academic)", TechnicianAvailability.AVAILABLE.value, ["Academic Campus", "Guest House"]),
-        ("demo_tech3", "Anita Singh (Girls Hostels)", TechnicianAvailability.AVAILABLE.value, ["SN Girls Hostel", "KN Girls Hostel"]),
-        ("demo_tech4", "Vikram Patel (Colony & Labs)", TechnicianAvailability.UNAVAILABLE.value, ["Residential Colony"])
+        ("demo_tech1", "Ramesh Kumar (Hostels)", TechnicianAvailability.AVAILABLE.value, ["SVBH Hostel", "PG Hostel"], ["WIFI_PROBLEM", "LAN_PROBLEM"]),
+        ("demo_tech2", "Suresh Verma (Academic)", TechnicianAvailability.AVAILABLE.value, ["Academic Campus", "Guest House"], ["IP_ADDRESS_ISSUE", "PROXY_ISSUE"]),
+        ("demo_tech3", "Anita Singh (Girls Hostels)", TechnicianAvailability.AVAILABLE.value, ["SN Girls Hostel", "KN Girls Hostel"], ["WIFI_PROBLEM", "LAN_PORT_BROKEN"]),
+        ("demo_tech4", "Vikram Patel (Colony & Labs)", TechnicianAvailability.UNAVAILABLE.value, ["Residential Colony"], ["LAN_PROBLEM", "LAN_PORT_BROKEN"])
     ]
 
     tech_ids = {}
-    for un, fn, avail, zones in techs_spec:
+    for un, fn, avail, zones, cats in techs_spec:
         doc = {
             "username": un,
             "password_hash": hashed_pwd,
@@ -102,7 +102,7 @@ async def seed_complaint_management_demo(remove_only: bool = False):
             "technician_profile": {
                 "availability": avail,
                 "zones": zones,
-                "categories": ["LAN_PROBLEM", "IP_ADDRESS_ISSUE", "PROXY_ISSUE", "LAN_PORT_BROKEN", "WIFI_PROBLEM"],
+                "categories": cats,
                 "max_open_complaints": 5
             },
             "seed_batch": "part2_demo",
@@ -130,6 +130,8 @@ async def seed_complaint_management_demo(remove_only: bool = False):
 
     t_id_base = 261021100000
 
+    priorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
     for idx in range(1, 31):
         st = statuses[idx % len(statuses)]
         loc = locations[idx % len(locations)]
@@ -140,7 +142,30 @@ async def seed_complaint_management_demo(remove_only: bool = False):
         created_at = now_dt - timedelta(days=created_days)
         ref_no = f"NET-{created_at.year}-{100000 + idx:06d}"
 
-        assigned_tech_id = tech_ids[f"demo_tech{(idx % 3) + 1}"] if st not in [ComplaintStatus.SUBMITTED.value, ComplaintStatus.CLASSIFIED.value] else None
+        # Special seed cases
+        priority_val = priorities[idx % len(priorities)]
+        agent_sug = None
+
+        if idx == 1:
+            # Unassigned CRITICAL complaint
+            st = ComplaintStatus.CLASSIFIED.value
+            priority_val = "CRITICAL"
+            assigned_tech_id = None
+        elif idx == 2:
+            # CLASSIFIED complaint with agent_suggestion
+            st = ComplaintStatus.CLASSIFIED.value
+            priority_val = "HIGH"
+            assigned_tech_id = None
+            agent_sug = {
+                "technician_id": tech_ids["demo_tech1"],
+                "technician_name": "Ramesh Kumar (Hostels)",
+                "score": 88.5,
+                "reason": "Zone match SVBH Hostel, 0 open complaints, closed 3 similar faults",
+                "breakdown": {"zone_match": 35, "workload": 25, "experience": 15, "cluster": 0, "performance": 13.5},
+                "at": created_at + timedelta(minutes=5)
+            }
+        else:
+            assigned_tech_id = tech_ids[f"demo_tech{(idx % 3) + 1}"] if st not in [ComplaintStatus.SUBMITTED.value, ComplaintStatus.CLASSIFIED.value] else None
 
         c_doc = {
             "ticket_id": t_id,
@@ -155,6 +180,20 @@ async def seed_complaint_management_demo(remove_only: bool = False):
             "problem_type": pt,
             "additional_comment": f"Demo problem description #{idx} regarding {pt}.",
             "status": st,
+            "priority": priority_val,
+            "ai_category": pt,
+            "ai_confidence": 0.88,
+            "affected_users_count": (idx % 6) + 1,
+            "similar_complaint_ids": [str(t_id_base + max(1, idx - 1))],
+            "agent_suggestion": agent_sug,
+            "classification_notes": {
+                "method": "llm",
+                "provider": "mock",
+                "model": "mock-v1",
+                "summary": f"Demo summary for ticket #{t_id}",
+                "priority_reason": f"{priority_val}: base MEDIUM, {idx % 6 + 1} users affected",
+                "analyzed_at": created_at + timedelta(minutes=2)
+            },
             "assigned_technician_id": assigned_tech_id,
             "assigned_at": created_at + timedelta(hours=2) if assigned_tech_id else None,
             "assignment_count": 1 if assigned_tech_id else 0,
@@ -176,15 +215,18 @@ async def seed_complaint_management_demo(remove_only: bool = False):
 
         await db.complaints.insert_one(c_doc)
 
-        # History entry
+        # History entries (with AGENT actor for AUTO assigned)
+        hist_actor_type = "AGENT" if (assigned_tech_id and idx % 2 == 0) else "SYSTEM"
+        hist_actor_name = "Assignment Agent" if hist_actor_type == "AGENT" else "Demo Seeder"
+
         hist_entry = {
             "ticket_id": t_id,
-            "event_type": "STATUS_CHANGE",
+            "event_type": "ASSIGNMENT" if assigned_tech_id else "STATUS_CHANGE",
             "from_status": "SUBMITTED",
             "to_status": st,
-            "actor_type": "SYSTEM",
-            "actor_name": "Demo Seeder",
-            "note": "Initial demo seed state",
+            "actor_type": hist_actor_type,
+            "actor_name": hist_actor_name,
+            "note": "Automatically assigned by Assignment Agent" if hist_actor_type == "AGENT" else "Initial demo seed state",
             "at": created_at
         }
         await db.complaint_history.insert_one(hist_entry)

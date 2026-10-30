@@ -174,6 +174,9 @@ async def confirm_resolution(token: str, payload: StudentConfirmPayload):
                 )
                 target_status = ComplaintStatus.CLASSIFIED.value
 
+        if target_status == ComplaintStatus.CLASSIFIED.value:
+            await events.emit("technician_availability_changed", {"ticket_id": ticket_id, "reopened": True})
+
         await db.complaints.update_one(
             {"ticket_id": ticket_id},
             {

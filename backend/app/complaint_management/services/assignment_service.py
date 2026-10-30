@@ -83,9 +83,13 @@ class AssignmentService:
         now_dt = datetime.utcnow()
         assign_count = complaint.get("assignment_count", 0) + 1
 
-        # 3. Update complaint document
-        await db.complaints.update_one(
-            {"ticket_id": ticket_id},
+        # 3. Update complaint document (Conditional update for AUTO assignment so manual always wins)
+        update_filter: Dict[str, Any] = {"ticket_id": ticket_id}
+        if method == "AUTO":
+            update_filter["$or"] = [{"assigned_technician_id": None}, {"assigned_technician_id": ""}]
+
+        res = await db.complaints.update_one(
+            update_filter,
             {
                 "$set": {
                     "assigned_technician_id": str(tech_doc["_id"]),
@@ -94,6 +98,10 @@ class AssignmentService:
                 }
             }
         )
+
+        if method == "AUTO" and res.matched_count == 0:
+            # Manual assignment already performed by a manager
+            return await db.complaints.find_one({"ticket_id": ticket_id})
 
         # 4. Transition status to ASSIGNED via StatusService
         updated_complaint = await StatusService.change_status(
